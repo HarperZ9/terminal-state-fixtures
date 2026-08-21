@@ -14,7 +14,9 @@ jobs:
         with:
           python-version: "3.12"
       - name: Install
-        run: pip install "verifiers>=0.3.0" datasets pytest
+        run: |
+          pip install datasets pytest
+          pip install -e environments/mlflow_terminal_state
       - name: Test mlflow-terminal-state
         working-directory: environments/mlflow_terminal_state
         run: pytest tests/ -q
