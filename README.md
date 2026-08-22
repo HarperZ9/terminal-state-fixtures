@@ -38,6 +38,17 @@ toolchain; the hub page carries the install command for your setup.
 Full task, dataset, and reward spec:
 [environments/mlflow_terminal_state/README.md](environments/mlflow_terminal_state/README.md).
 
+### metr-terminal-state-runs
+
+Expose the same exhaustive 324 terminal states through METR Task Standard's
+`TaskFamily` interface. The runtime is standard-library only; a pinned official
+METR Git dependency verifies the pytest-plugin boundary during development.
+The fixture has no network, model, auxiliary VM, judge, or mutable-state
+dependency and is not represented as accepted or endorsed by METR.
+
+Reproduce and inspect the exact classifier contract:
+[environments/metr_terminal_state_runs/README.md](environments/metr_terminal_state_runs/README.md).
+
 ### verifiers-component-forge
 
 Write and repair verifiers components against terminal-state contracts. The

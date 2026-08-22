@@ -6,7 +6,7 @@
 
 **Architecture:** A single standard-library module implements METR's `TaskFamily` surface and exact terminal-state scorer. An independent pytest suite pins the exhaustive dataset and scorer semantics, while packaging and CI keep METR's pytest plugin in the test path only.
 
-**Tech Stack:** Python 3.11 through 3.13, standard library, pytest, `metr-task-standard==0.1.2`, uv, GitHub Actions.
+**Tech Stack:** Python 3.11 through 3.13, standard library, pytest, METR Task Standard pinned to official commit `03236e9a1a0d3c9f9d63f6c9e60a9278a59d22ff`, uv, GitHub Actions.
 
 **Spec:** `docs/superpowers/specs/2026-08-22-metr-terminal-state-environment-design.md`
 
@@ -82,7 +82,7 @@ Declare package name `metr-terminal-state-runs`, version `0.1.0`, Python range `
 
 - [ ] **Step 3: Add public-safe documentation and isolated CI**
 
-Document purpose, denominator logic, exact 324-case count, reproduction commands, provenance, non-endorsement, and no-network boundary. Update the root README environment list. Add a GitHub Actions job that installs pytest, `metr-task-standard==0.1.2`, and the editable environment before running its tests.
+Document purpose, denominator logic, exact 324-case count, reproduction commands, provenance, non-endorsement, and no-network boundary. Update the root README environment list. Add a GitHub Actions job that installs pytest, the exact official METR Git dependency, and the editable environment before running its tests.
 
 - [ ] **Step 4: Verify package and plugin paths**
 

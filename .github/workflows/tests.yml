@@ -20,3 +20,14 @@ jobs:
       - name: Test mlflow-terminal-state
         working-directory: environments/mlflow_terminal_state
         run: pytest tests/ -q
+
+  metr-task-standard-tests:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: astral-sh/setup-uv@v6
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+      - name: Test METR terminal-state TaskFamily
+        run: uv run --project environments/metr_terminal_state_runs python -m pytest environments/metr_terminal_state_runs/tests -q --task-standard-task-family-name metr_terminal_state_runs --task-standard-task-name run_000

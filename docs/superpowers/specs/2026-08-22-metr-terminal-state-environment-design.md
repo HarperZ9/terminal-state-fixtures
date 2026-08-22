@@ -54,7 +54,7 @@ Expected distribution:
 
 ## Dependencies And Provenance
 
-Runtime code uses only the Python standard library and supports Python `>=3.11,<3.14`. Tests install `pytest` and `metr-task-standard==0.1.2`; METR's package is used only to verify the pytest plugin boundary.
+Runtime code uses only the Python standard library and supports Python `>=3.11,<3.14`. Tests install `pytest` and METR's `metr-task-standard` package directly from the official repository at reviewed commit `03236e9a1a0d3c9f9d63f6c9e60a9278a59d22ff`, `python-package` subdirectory. The METR package is not available from the package registry, so the exact Git commit is both the dependency source and the provenance pin. It is used only to verify the pytest plugin boundary.
 
 The implementation derives from this repository's MIT-licensed `mlflow_terminal_state` environment and the locally reviewed METR adapter commit `4d834c97cc403c9b4a5933109ed473c8453f9b1a`. The README states that the fixture is a local candidate and is not accepted or endorsed by METR.
 
@@ -63,8 +63,8 @@ The implementation derives from this repository's MIT-licensed `mlflow_terminal_
 The focused suite must pass through both paths:
 
 ```powershell
-uv run --project environments/metr_terminal_state_runs --with pytest --with metr-task-standard==0.1.2 python -m pytest environments/metr_terminal_state_runs/tests -q
-uv run --project environments/metr_terminal_state_runs --with pytest --with metr-task-standard==0.1.2 python -m pytest environments/metr_terminal_state_runs/tests -q --task-standard-task-family-name metr_terminal_state_runs --task-standard-task-name run_000
+uv run --project environments/metr_terminal_state_runs python -m pytest environments/metr_terminal_state_runs/tests -q
+uv run --project environments/metr_terminal_state_runs python -m pytest environments/metr_terminal_state_runs/tests -q --task-standard-task-family-name metr_terminal_state_runs --task-standard-task-name run_000
 ```
 
 Existing MLflow and component-forge suites must remain green under their isolated environments. CI must install and test each environment independently.

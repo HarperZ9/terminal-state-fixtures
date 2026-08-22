@@ -102,3 +102,18 @@ def test_last_parseable_json_object_wins_when_it_is_incorrect():
     submission = correct + '\n{"verdict":"verified","in_denominator":true}'
 
     assert TaskFamily.score(task, submission) == 0.0
+
+
+@pytest.mark.task_standard_tasks(["run_000"])
+def test_metr_plugin_loads_the_installed_task_family(task_family, task_name, task):
+    assert task_name == "run_000"
+    assert task is not None
+    assert task_family.score(
+        task,
+        json.dumps(
+            {
+                "verdict": task["verdict"],
+                "in_denominator": task["in_denominator"],
+            }
+        ),
+    ) == 1.0
