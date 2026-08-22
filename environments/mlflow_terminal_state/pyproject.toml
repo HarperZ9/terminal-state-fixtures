@@ -3,7 +3,7 @@ name = "mlflow-terminal-state"
 description = "Terminal-state scoring: classify agent-run records into seven verdicts and keep the quality denominator honest. Exhaustive 324-case dataset, deterministic reference oracle."
 tags = ["eval", "train", "scoring", "reliability", "structured-output"]
 version = "0.1.0"
-requires-python = ">=3.10"
+requires-python = ">=3.11,<3.14"
 dependencies = [
     "verifiers>=0.3.0",
 ]
