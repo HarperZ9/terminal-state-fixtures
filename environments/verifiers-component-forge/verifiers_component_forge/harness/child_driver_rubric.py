@@ -64,6 +64,9 @@ def main() -> int:
         return 0
 
     module = types.ModuleType("agent_module")
+    # Registered before exec: dataclass machinery (among others) resolves
+    # the defining module through sys.modules.
+    sys.modules["agent_module"] = module
     try:
         exec(compile(request["module_source"], "<agent_module>", "exec"), module.__dict__)
         env = module.load_environment()  # type: ignore[attr-defined]
