@@ -49,14 +49,16 @@ class LastPythonFenceParser(vf.Parser):
 
 
 def load_environment(**kwargs) -> vf.Environment:
-    frozen = _load_frozen("parser_contract.json")
+    frozen_parser = _load_frozen("parser_contract.json")
+    frozen_rubric = _load_frozen("rubric_contract.json")
     parser = LastPythonFenceParser()
 
     rows = []
     from .families.parser_contract_prompt import render_prompt
+    from .families.rubric_contract_prompt import render_prompt as render_rubric_prompt
 
-    for variant_id in sorted(frozen):
-        entry = frozen[variant_id]
+    for variant_id in sorted(frozen_parser):
+        entry = frozen_parser[variant_id]
         v = entry["variant"]
         variant = Variant(
             tuple(v["ladder"]), v["scope"], v["think_strip"], v["empty_hit"]
@@ -68,14 +70,17 @@ def load_environment(**kwargs) -> vf.Environment:
                 "info": {"family": "parser-contract", "variant_id": variant_id},
             }
         )
+    for variant_id in sorted(frozen_rubric):
+        entry = frozen_rubric[variant_id]
+        rows.append(
+            {
+                "question": render_rubric_prompt(entry["contract"], entry["worked"]),
+                "answer": variant_id,
+                "info": {"family": "rubric-contract", "variant_id": variant_id},
+            }
+        )
 
-    async def _run_probes(completion, info) -> dict:
-        """One child run for this rollout; memoization-free by design (each
-        rollout is independent)."""
-        module_source = parser.parse_answer(completion)
-        if module_source is None:
-            return {"skipped": "no-code"}
-        entry = frozen[info["variant_id"]]
+    async def _run_parser_family(module_source: str, entry: dict) -> tuple[dict, float]:
         result = await runner.run_child(
             "child_driver_parser.py",
             module_source,
@@ -83,20 +88,55 @@ def load_environment(**kwargs) -> vf.Environment:
             wall_clock=60.0,
         )
         if not result.ok:
-            return {"skipped": result.failure or "child-failure"}
-        return {"results": result.payload["results"], "entry": entry}
-
-    async def terminal_state_match(completion, info, state, **_kwargs) -> float:
-        outcome = await _run_probes(completion, info)
-        state["forge_outcome"] = outcome  # shared with the 0-weight metrics
-        if "results" not in outcome:
-            return 0.0
-        entry = outcome["entry"]
-        return runner.match_fraction(
-            outcome["results"],
+            return {"skipped": result.failure or "child-failure"}, 0.0
+        score = runner.match_fraction(
+            result.payload["results"],
             [p["expect"] for p in entry["probes"]],
             [p["weight"] for p in entry["probes"]],
         )
+        return {"results": result.payload["results"]}, score
+
+    async def _run_rubric_family(module_source: str, entry: dict) -> tuple[dict, float]:
+        contract = entry["contract"]
+        result = await runner.run_child(
+            "child_driver_rubric.py",
+            module_source,
+            {
+                "contract": {
+                    "names": contract["names"],
+                    "weights": contract["weights"],
+                },
+                "fixtures": [p["fixture"] for p in entry["fixtures"]],
+            },
+            wall_clock=90.0,
+        )
+        if not result.ok:
+            return {"skipped": result.failure or "child-failure"}, 0.0
+        gate = result.payload["gate"]
+        outcome = {"results": result.payload["results"], "gate": gate}
+        if not all(gate.values()):
+            return outcome, 0.0
+        score = runner.match_fraction(
+            result.payload["results"],
+            [p["expect"] for p in entry["fixtures"]],
+        )
+        return outcome, score
+
+    async def terminal_state_match(completion, info, state, **_kwargs) -> float:
+        module_source = parser.parse_answer(completion)
+        if module_source is None:
+            state["forge_outcome"] = {"skipped": "no-code"}
+            return 0.0
+        if info["family"] == "parser-contract":
+            outcome, score = await _run_parser_family(
+                module_source, frozen_parser[info["variant_id"]]
+            )
+        else:
+            outcome, score = await _run_rubric_family(
+                module_source, frozen_rubric[info["variant_id"]]
+            )
+        state["forge_outcome"] = outcome  # shared with the 0-weight metrics
+        return score
 
     def parsed_code_present(completion, **_kwargs) -> float:
         return 1.0 if parser.parse_answer(completion) is not None else 0.0
@@ -104,6 +144,13 @@ def load_environment(**kwargs) -> vf.Environment:
     def child_completed(state, **_kwargs) -> float:
         outcome = state.get("forge_outcome") or {}
         return 1.0 if "results" in outcome else 0.0
+
+    def structural_gate_pass(state, **_kwargs) -> float:
+        outcome = state.get("forge_outcome") or {}
+        gate = outcome.get("gate")
+        if gate is None:
+            return 1.0  # families without a structural gate
+        return 1.0 if all(gate.values()) else 0.0
 
     def probe_error_fraction(state, **_kwargs) -> float:
         outcome = state.get("forge_outcome") or {}
@@ -118,9 +165,10 @@ def load_environment(**kwargs) -> vf.Environment:
             terminal_state_match,
             parsed_code_present,
             child_completed,
+            structural_gate_pass,
             probe_error_fraction,
         ],
-        weights=[1.0, 0.0, 0.0, 0.0],
+        weights=[1.0, 0.0, 0.0, 0.0, 0.0],
         parser=parser,
     )
 

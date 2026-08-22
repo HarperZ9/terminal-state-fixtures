@@ -68,8 +68,9 @@ async def _score(env, row, reply_text: str) -> State:
 def test_reference_reply_scores_one_through_the_real_environment():
     env = forge.load_environment()
     dataset = env.get_dataset()
-    assert len(dataset) == 96
+    assert len(dataset) == 192  # 96 parser-contract + 96 rubric-contract
     row = dataset[0]
+    assert row["info"]["family"] == "parser-contract"
     frozen = forge._load_frozen("parser_contract.json")
     variant = frozen[row["answer"]]["variant"]
 
@@ -78,6 +79,49 @@ def test_reference_reply_scores_one_through_the_real_environment():
     assert state["metrics"]["parsed_code_present"] == 1.0
     assert state["metrics"]["child_completed"] == 1.0
     assert state["metrics"]["probe_error_fraction"] == 0.0
+
+
+def _rubric_row(env):
+    dataset = env.get_dataset()
+    for i in range(len(dataset)):
+        if dataset[i]["info"]["family"] == "rubric-contract":
+            return dataset[i]
+    raise AssertionError("no rubric-contract row")
+
+
+def test_rubric_reference_scores_one_and_normalizer_trips_the_gate():
+    from verifiers_component_forge.families.rubric_contract import (
+        all_contracts,
+        reference_module_source,
+    )
+
+    env = forge.load_environment()
+    row = _rubric_row(env)
+    contract = next(
+        c for c in all_contracts() if c.variant_id == row["answer"]
+    )
+    source = reference_module_source(contract)
+
+    reply = "Implementing the contract.\n\n```python\n" + source + "\n```\n"
+    state = asyncio.run(_score(env, row, reply))
+    assert state["reward"] == 1.0, state["metrics"]
+    assert state["metrics"]["structural_gate_pass"] == 1.0
+    assert state["metrics"]["probe_error_fraction"] == 0.0
+
+    # The classic mistake: normalize the weight vector. Same functions, same
+    # names, wrong weights: the structural gate zeroes the case.
+    n = len(contract.effective_weights)
+    normalized = source.replace(
+        "weights=[" + ", ".join(repr(w) for w in contract.effective_weights) + "]",
+        "weights=["
+        + ", ".join(repr(w / n) for w in contract.effective_weights)
+        + "]",
+    )
+    assert normalized != source
+    reply2 = "```python\n" + normalized + "\n```\n"
+    state2 = asyncio.run(_score(env, row, reply2))
+    assert state2["reward"] == 0.0
+    assert state2["metrics"]["structural_gate_pass"] == 0.0
 
 
 def test_codeless_reply_scores_zero_with_diagnostics():

@@ -21,6 +21,8 @@ sys.path.insert(0, str(ROOT))
 
 from verifiers_component_forge.families import parser_contract as pc  # noqa: E402
 from verifiers_component_forge.families import parser_contract_grammar as pcg  # noqa: E402
+from verifiers_component_forge.families import rubric_contract as rc  # noqa: E402
+from verifiers_component_forge.families import rubric_contract_grammar as rcg  # noqa: E402
 from verifiers_component_forge.harness.child_driver_parser import (  # noqa: E402
     _build_completion,
 )
@@ -57,19 +59,100 @@ def build_parser_contract() -> dict:
     return out
 
 
+def build_rubric_contract() -> dict:
+    """Execute each contract's reference module through the REAL verifiers
+    machinery (the exact path the child driver replays) and freeze rewards
+    and metrics per fixture."""
+    import asyncio
+    import types
+
+    import verifiers as vf
+    from verifiers.types import State
+
+    out: dict[str, dict] = {}
+    for contract in rc.all_contracts():
+        source = rc.reference_module_source(contract)
+        module = types.ModuleType("reference_module")
+        sys.modules["reference_module"] = module
+        exec(compile(source, "<reference_module>", "exec"), module.__dict__)
+        env = module.load_environment()
+        rubric = env.rubric
+        if isinstance(rubric, vf.RubricGroup):
+            rubric = rubric.rubrics[0]
+
+        async def score(fixture: dict) -> dict:
+            state = State(
+                {
+                    "prompt": fixture["prompt"],
+                    "completion": fixture["completion"],
+                    "answer": fixture["answer"],
+                    "info": fixture["info"],
+                    "task": {},
+                }
+            )
+            await rubric.score_rollout(state)
+            return {
+                "reward": float(state["reward"]),
+                "metrics": {k: float(v) for k, v in state["metrics"].items()},
+            }
+
+        rows = []
+        for fixture in rcg.fixtures_for(contract):
+            expect = asyncio.run(score(fixture))
+            rows.append(
+                {
+                    "cell": fixture["cell"],
+                    "fixture": {
+                        "prompt": fixture["prompt"],
+                        "completion": fixture["completion"],
+                        "answer": fixture["answer"],
+                        "info": fixture["info"],
+                    },
+                    "expect": expect,
+                }
+            )
+        worked = []
+        for fixture in rcg.worked_for(contract):
+            worked.append(
+                {
+                    "cell": fixture["cell"],
+                    "fixture": {
+                        "prompt": fixture["prompt"],
+                        "completion": fixture["completion"],
+                        "answer": fixture["answer"],
+                        "info": fixture["info"],
+                    },
+                    "expect": asyncio.run(score(fixture)),
+                }
+            )
+        out[contract.variant_id] = {
+            "worked": worked,
+            "contract": {
+                "table_ix": contract.table_ix,
+                "names": [c.name for c in contract.criteria],
+                "kinds": [[c.name, c.kind, c.param] for c in contract.criteria],
+                "weights": list(contract.effective_weights),
+                "exclusion": contract.exclusion,
+                "negative": contract.negative,
+            },
+            "fixtures": rows,
+        }
+    return out
+
+
 def _dumps(data: dict) -> str:
     return json.dumps(data, indent=1, sort_keys=True, ensure_ascii=True) + "\n"
 
 
 def main() -> int:
+    DATA_DIR.mkdir(parents=True, exist_ok=True)
+
     first = _dumps(build_parser_contract())
     second = _dumps(build_parser_contract())
     if first != second:
-        print("FATAL: generator is not deterministic", file=sys.stderr)
+        print("FATAL: parser_contract generator is not deterministic", file=sys.stderr)
         return 1
-    DATA_DIR.mkdir(parents=True, exist_ok=True)
-    target = DATA_DIR / "parser_contract.json"
-    target.write_text(first, encoding="utf-8", newline="\n")
+    (DATA_DIR / "parser_contract.json").write_text(first, encoding="utf-8", newline="\n")
     data = json.loads(first)
     n_probes = sum(len(v["probes"]) for v in data.values())
     n_none = sum(
@@ -78,6 +161,23 @@ def main() -> int:
     print(
         f"parser_contract.json: {len(data)} variants, {n_probes} probes "
         f"({n_none} expect None), {len(first)} bytes"
+    )
+
+    first = _dumps(build_rubric_contract())
+    second = _dumps(build_rubric_contract())
+    if first != second:
+        print("FATAL: rubric_contract generator is not deterministic", file=sys.stderr)
+        return 1
+    (DATA_DIR / "rubric_contract.json").write_text(first, encoding="utf-8", newline="\n")
+    data = json.loads(first)
+    n_fx = sum(len(v["fixtures"]) for v in data.values())
+    rewards = sorted(
+        {p["expect"]["reward"] for v in data.values() for p in v["fixtures"]}
+    )
+    print(
+        f"rubric_contract.json: {len(data)} contracts, {n_fx} fixtures, "
+        f"{len(rewards)} distinct rewards "
+        f"(min {rewards[0]}, max {rewards[-1]}), {len(first)} bytes"
     )
     return 0
 
