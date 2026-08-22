@@ -39,9 +39,29 @@ Discrimination is pinned by tests rather than asserted: the committed
 reference solution scores 1.0 on every case, and curated known-bad
 solutions (a weight normalizer, a constant-1.0 rubric with correct wiring,
 the verbatim broken module, a delegating `rollout` override, a wrong reward
-schedule) score at or below stated ceilings. Honest null: vf-eval outputs
-on live models are not yet included; the model-free end-to-end slice in
-`tests/` exercises the same path minus only the model.
+schedule) score at or below stated ceilings.
+
+## Live-model evidence
+
+`vf-eval` runs on one weak and one strong model, 5 shuffled examples
+(seed 0) x 3 rollouts per family; raw outputs are committed under
+[outputs/evals/](outputs/evals/).
+
+| family | claude-haiku-4-5 | claude-sonnet-5 |
+| --- | --- | --- |
+| parser-contract | 0.323 | 0.907 |
+| rubric-contract | 0.924 | 1.000 |
+| rubric-repair | 0.871 | 1.000 |
+| referee-protocol | 0.650 | 1.000 |
+| redaction-contract | 1.000 | 1.000 |
+
+The strong model beats the weak model on every family with headroom, and
+parser-contract holds both models below ceiling. Honest notes: the three
+1.000 sonnet cells and the redaction row are saturated at this 5-example
+sample size (the frozen batteries still discriminate, as the haiku column
+and the pinned known-bad ceilings show); referee-protocol's 0.650 haiku
+average is largely the 0.5 transcript-only partial credit, meaning haiku
+tends to get the state machine right and the reward schedule wrong.
 
 ## Design choices worth knowing
 

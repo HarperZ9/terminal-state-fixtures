@@ -49,7 +49,10 @@ class LastPythonFenceParser(vf.Parser):
         return content or None
 
 
-def load_environment(**kwargs) -> vf.Environment:
+def load_environment(families: list[str] | None = None, **kwargs) -> vf.Environment:
+    """Build the environment. ``families`` optionally restricts the dataset
+    to a subset of task families (e.g. ``["referee-protocol"]``), for
+    per-family evaluation and RL runs; the default serves all of them."""
     frozen = {
         "parser-contract": _load_frozen("parser_contract.json"),
         "rubric-contract": _load_frozen("rubric_contract.json"),
@@ -128,6 +131,15 @@ def load_environment(**kwargs) -> vf.Environment:
                 "info": {"family": "redaction-contract", "variant_id": variant_id},
             }
         )
+
+    if families is not None:
+        unknown = set(families) - set(frozen)
+        if unknown:
+            raise ValueError(
+                f"unknown families {sorted(unknown)}; valid: {sorted(frozen)}"
+            )
+        allowed = set(families)
+        rows = [r for r in rows if r["info"]["family"] in allowed]
 
     async def terminal_state_match(completion, info, state, **_kwargs) -> float:
         module_source = parser.parse_answer(completion)

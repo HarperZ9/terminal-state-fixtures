@@ -38,6 +38,24 @@ All three pass clean. `ty` needs `--python` pointed at an environment with
 verifiers installed; without it the verifiers imports are unresolvable and
 report as diagnostics.
 
+## Live-model eval evidence
+
+The committed `outputs/evals/` runs were produced with `vf-eval` (verifiers
+0.3.0) against the Anthropic API: 5 examples (shuffle seed 0) x 3 rollouts
+per family, models `claude-haiku-4-5-20251001` and `claude-sonnet-5`,
+max_tokens 8192, `ANTHROPIC_API_KEY` in the environment. Each per-family
+run is one `[[eval]]` entry in a TOML config passing
+`env_args = { families = [...] }` to `load_environment`.
+
+Two Windows-specific notes, needed only when reproducing on Windows:
+
+- vf-eval's default ZMQ env-server binds an `ipc://` socket, which does not
+  exist on Windows; set `disable_env_server = true` in the TOML (an
+  in-process mode not exposed as a CLI flag). On Linux the default works.
+- verifiers 0.3.0 injects an `httpx` client into `AsyncAnthropic`, so the
+  anthropic SDK must be `<1.0` (1.0 switched to a vendored httpx2 and
+  rejects the injected client).
+
 ## Rubric-repair kill-check
 
 The `rubric-repair` family ships only mutants that flip at least two battery
