@@ -25,6 +25,59 @@ def _load_frozen(name: str) -> dict:
     return json.loads((_DATA_DIR / name).read_text(encoding="utf-8"))
 
 
+def _declared_raw_secret_values(record: dict) -> list[str]:
+    rows = record.get("secrets") or []
+    values = []
+    for item in rows:
+        if not isinstance(item, dict):
+            continue
+        raw = item.get("value")
+        if isinstance(raw, str) and raw:
+            values.append(raw)
+    return values
+
+
+def _contains_any_raw_secret(value: object, raw_values: list[str]) -> bool:
+    if isinstance(value, str):
+        return any(raw in value for raw in raw_values)
+    if isinstance(value, list):
+        return any(_contains_any_raw_secret(item, raw_values) for item in value)
+    if isinstance(value, dict):
+        return any(_contains_any_raw_secret(item, raw_values) for item in value.values())
+    return False
+
+
+def _redaction_gate(results: object, entry: dict) -> dict[str, bool]:
+    fixtures = entry["fixtures"]
+    expectations = [p["expect"] for p in fixtures]
+    if not isinstance(results, list) or len(results) != len(fixtures):
+        return {
+            "result_shape": False,
+            "no_raw_secret_leaks": False,
+            "all_exact": False,
+        }
+
+    result_shape = all(
+        isinstance(result, dict) and "error" not in result for result in results
+    )
+    no_raw_secret_leaks = all(
+        not _contains_any_raw_secret(
+            result, _declared_raw_secret_values(fixture["record"])
+        )
+        for result, fixture in zip(results, fixtures)
+    )
+    try:
+        all_exact = runner.match_fraction(results, expectations) == 1.0
+    except (TypeError, ValueError):
+        all_exact = False
+
+    return {
+        "result_shape": result_shape,
+        "no_raw_secret_leaks": no_raw_secret_leaks,
+        "all_exact": all_exact,
+    }
+
+
 class LastPythonFenceParser(vf.Parser):
     """The environment's own completion parser: from the LAST ```python opener
     to the LAST ``` closer in the reply, all messages joined.
@@ -148,11 +201,10 @@ def load_environment(**kwargs) -> vf.Environment:
         )
         if not result.ok:
             return {"skipped": result.failure or "child-failure"}, 0.0
-        score = runner.match_fraction(
-            result.payload["results"],
-            [p["expect"] for p in entry["fixtures"]],
-        )
-        return {"results": result.payload["results"]}, score
+        results = result.payload.get("results") if result.payload else None
+        gate = _redaction_gate(results, entry)
+        outcome = {"results": results if isinstance(results, list) else [], "gate": gate}
+        return outcome, 1.0 if all(gate.values()) else 0.0
 
     async def terminal_state_match(completion, info, state, **_kwargs) -> float:
         module_source = parser.parse_answer(completion)

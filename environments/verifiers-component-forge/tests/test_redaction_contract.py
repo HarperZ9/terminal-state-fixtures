@@ -11,6 +11,8 @@ import json
 import sys
 from pathlib import Path
 
+import pytest
+
 sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
 
 from verifiers_component_forge.families import redaction_contract as rc  # noqa: E402
@@ -99,8 +101,65 @@ def test_expected_outputs_never_contain_raw_synthetic_secrets():
     for entry in data.values():
         for row in entry["fixtures"] + entry["worked"]:
             expected = json.dumps(row["expect"], sort_keys=True)
-            assert rc.SECRET_PREFIX not in expected
+            for raw in _declared_raw_secret_values(row["record"]):
+                assert raw not in expected
         assert len(entry["fixtures"]) >= 5
+
+
+def _canonical_record_expect_pair(row: dict) -> str:
+    return json.dumps(
+        {"record": row["record"], "expect": row["expect"]},
+        sort_keys=True,
+        ensure_ascii=True,
+    )
+
+
+def _declared_raw_secret_values(record: dict) -> list[str]:
+    rows = record.get("secrets") or []
+    values = []
+    for item in rows:
+        if isinstance(item, dict) and isinstance(item.get("value"), str) and item["value"]:
+            values.append(item["value"])
+    return values
+
+
+def test_worked_examples_are_canonically_disjoint_from_scored_pairs():
+    for variant in rc.all_variants():
+        scored_pairs = {
+            _canonical_record_expect_pair(
+                {"record": row["record"], "expect": rc.reference_redact(row["record"])}
+            )
+            for row in rc.fixtures_for(variant)
+        }
+        worked_pairs = {_canonical_record_expect_pair(row) for row in rc.worked_for(variant)}
+
+        assert worked_pairs
+        assert worked_pairs.isdisjoint(scored_pairs)
+
+
+def test_generator_safety_check_derives_declared_raw_secret_values():
+    sys.path.insert(0, str(Path(__file__).resolve().parents[1] / "generation"))
+    import generate
+
+    unsafe = {
+        "unsafe-variant": {
+            "fixtures": [
+                {
+                    "cell": "raw-value-without-standard-prefix",
+                    "record": {
+                        "secrets": [
+                            {"name": "TOKEN", "value": "declared-raw-token"}
+                        ],
+                    },
+                    "expect": {"stdout": "declared-raw-token"},
+                }
+            ],
+            "worked": [],
+        }
+    }
+
+    with pytest.raises(ValueError, match="declared raw secret"):
+        generate.assert_redaction_expected_safe(unsafe)
 
 
 REFERENCE_MODULE = """

@@ -139,19 +139,101 @@ def test_redaction_reference_scores_one_and_echo_leaks_fail():
     )
 
     env = forge.load_environment()
-    row = next(
-        r for r in env.get_dataset() if r["info"]["family"] == "redaction-contract"
-    )
+    row = _redaction_row(env)
 
     reply = "```python\n" + reference_module_source() + "\n```\n"
     state = asyncio.run(_score(env, row, reply))
     assert state["reward"] == 1.0, state["metrics"]
     assert state["metrics"]["child_completed"] == 1.0
+    assert state["metrics"]["structural_gate_pass"] == 1.0
     assert state["metrics"]["probe_error_fraction"] == 0.0
 
     leaky = "```python\ndef redact_record(record):\n    return record\n```\n"
     state2 = asyncio.run(_score(env, row, leaky))
     assert state2["reward"] == 0.0
+
+
+def _redaction_row(env, variant_id: str = "redact-00-headers"):
+    for row in env.get_dataset():
+        if (
+            row["info"]["family"] == "redaction-contract"
+            and row["info"]["variant_id"] == variant_id
+        ):
+            return row
+    raise AssertionError(f"no redaction-contract row for {variant_id}")
+
+
+def _score_redaction_source(source: str, variant_id: str = "redact-00-headers") -> State:
+    env = forge.load_environment()
+    row = _redaction_row(env, variant_id)
+    return asyncio.run(_score(env, row, "```python\n" + source + "\n```\n"))
+
+
+def test_redaction_one_case_raw_secret_leak_zeroes_whole_variant():
+    from verifiers_component_forge.families.redaction_contract import (
+        reference_module_source,
+    )
+
+    source = reference_module_source().replace(
+        "def redact_record(record):\n    out = _walk(record, _secret_pairs(record))",
+        "def redact_record(record):\n"
+        "    if record.get('case_id') == 'header-value':\n"
+        "        return record\n"
+        "    out = _walk(record, _secret_pairs(record))",
+    )
+
+    state = _score_redaction_source(source)
+
+    assert state["reward"] == 0.0
+    assert state["forge_outcome"]["gate"]["no_raw_secret_leaks"] is False
+    assert state["metrics"]["structural_gate_pass"] == 0.0
+
+
+def test_redaction_one_case_wrong_result_zeroes_whole_variant():
+    from verifiers_component_forge.families.redaction_contract import (
+        reference_module_source,
+    )
+
+    source = reference_module_source().replace(
+        '    out["redaction_policy"] = POLICY\n    return out',
+        '    out["redaction_policy"] = POLICY\n'
+        "    if record.get('case_id') == 'stdout-stderr':\n"
+        "        out['stdout'] = 'wrong redaction output'\n"
+        "    return out",
+    )
+
+    state = _score_redaction_source(source)
+
+    assert state["reward"] == 0.0
+    assert state["forge_outcome"]["gate"]["all_exact"] is False
+    assert state["metrics"]["structural_gate_pass"] == 0.0
+
+
+def test_redaction_compile_error_zeroes_with_shape_gate():
+    state = _score_redaction_source("def redact_record(record):\n    return {")
+
+    assert state["reward"] == 0.0
+    assert state["forge_outcome"]["gate"]["result_shape"] is False
+    assert state["metrics"]["probe_error_fraction"] == 1.0
+    assert state["metrics"]["structural_gate_pass"] == 0.0
+
+
+def test_redaction_missing_function_zeroes_with_shape_gate():
+    state = _score_redaction_source("def helper(record):\n    return record")
+
+    assert state["reward"] == 0.0
+    assert state["forge_outcome"]["gate"]["result_shape"] is False
+    assert state["metrics"]["probe_error_fraction"] == 1.0
+    assert state["metrics"]["structural_gate_pass"] == 0.0
+
+
+def test_redaction_non_dict_return_zeroes_with_shape_gate():
+    state = _score_redaction_source("def redact_record(record):\n    return ['not', 'a dict']")
+
+    assert state["reward"] == 0.0
+    assert state["forge_outcome"]["gate"]["result_shape"] is False
+    assert state["metrics"]["probe_error_fraction"] == 1.0
+    assert state["metrics"]["structural_gate_pass"] == 0.0
 
 
 def test_prompt_states_the_whole_contract():

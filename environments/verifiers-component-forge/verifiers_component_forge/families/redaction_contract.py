@@ -286,13 +286,38 @@ def fixtures_for(variant: RedactionVariant) -> list[dict]:
 
 
 def worked_for(variant: RedactionVariant) -> list[dict]:
-    rows = fixtures_for(variant)[:2]
+    slug = variant.variant_id.replace("-", "_").upper()
+    raw = _secret(f"WORKED_{slug}_TOKEN")
+    secrets = [
+        {
+            "name": "WORKED_TOKEN",
+            "value": raw,
+            "source": "env:WORKED_TOKEN",
+        }
+    ]
+    records = [
+        _base_record(
+            f"worked-{variant.variant_id}-stdout",
+            secrets,
+            stdout=f"rerun with WORKED_TOKEN={raw}",
+            trace_id=f"trace-worked-{variant.variant_id}-001",
+        ),
+        _base_record(
+            f"worked-{variant.variant_id}-manifest",
+            secrets,
+            manifest={
+                "path_label": "artifact:worked",
+                "sha256": "b" * 64,
+                "rerun": f"WORKED_TOKEN={raw} run-fixture",
+            },
+        ),
+    ]
     out = []
-    for row in rows:
+    for record in records:
         worked = {
-            "cell": f"worked-{row['cell']}",
-            "record": row["record"],
-            "expect": reference_redact(row["record"]),
+            "cell": record["case_id"],
+            "record": record,
+            "expect": reference_redact(record),
         }
         out.append(worked)
     return out

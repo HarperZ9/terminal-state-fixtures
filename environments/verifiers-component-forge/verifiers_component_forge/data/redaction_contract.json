@@ -240,93 +240,69 @@
   },
   "worked": [
    {
-    "cell": "worked-header-value",
+    "cell": "worked-redact-00-headers-stdout",
     "expect": {
-     "case_id": "header-value",
-     "config": {
-      "endpoint": "https://example.invalid/eval",
-      "headers": {
-       "Authorization": "Bearer <redacted:AUTH_TOKEN>",
-       "X-Trace": "trace-public-001"
-      }
-     },
+     "case_id": "worked-redact-00-headers-stdout",
      "redaction_policy": "redaction-contract/1",
      "schema": "redaction.fixture.input/1",
      "secrets": [
       {
-       "name": "AUTH_TOKEN",
-       "source": "env:AUTH_TOKEN",
-       "value": "<redacted:AUTH_TOKEN>"
-      },
-      {
-       "name": "API_KEY",
-       "source": "env:API_KEY",
-       "value": "<redacted:API_KEY>"
+       "name": "WORKED_TOKEN",
+       "source": "env:WORKED_TOKEN",
+       "value": "<redacted:WORKED_TOKEN>"
       }
-     ]
+     ],
+     "stdout": "rerun with WORKED_TOKEN=<redacted:WORKED_TOKEN>",
+     "trace_id": "trace-worked-redact-00-headers-001"
     },
     "record": {
-     "case_id": "header-value",
-     "config": {
-      "endpoint": "https://example.invalid/eval",
-      "headers": {
-       "Authorization": "Bearer FAKE_SECRET_DO_NOT_USE_LOOP29_AUTH",
-       "X-Trace": "trace-public-001"
-      }
-     },
+     "case_id": "worked-redact-00-headers-stdout",
      "schema": "redaction.fixture.input/1",
      "secrets": [
       {
-       "name": "AUTH_TOKEN",
-       "source": "env:AUTH_TOKEN",
-       "value": "FAKE_SECRET_DO_NOT_USE_LOOP29_AUTH"
-      },
-      {
-       "name": "API_KEY",
-       "source": "env:API_KEY",
-       "value": "FAKE_SECRET_DO_NOT_USE_LOOP29_API"
+       "name": "WORKED_TOKEN",
+       "source": "env:WORKED_TOKEN",
+       "value": "FAKE_SECRET_DO_NOT_USE_LOOP29_WORKED_REDACT_00_HEADERS_TOKEN"
       }
-     ]
+     ],
+     "stdout": "rerun with WORKED_TOKEN=FAKE_SECRET_DO_NOT_USE_LOOP29_WORKED_REDACT_00_HEADERS_TOKEN",
+     "trace_id": "trace-worked-redact-00-headers-001"
     }
    },
    {
-    "cell": "worked-stdout-stderr",
+    "cell": "worked-redact-00-headers-manifest",
     "expect": {
-     "case_id": "stdout-stderr",
+     "case_id": "worked-redact-00-headers-manifest",
+     "manifest": {
+      "path_label": "artifact:worked",
+      "rerun": "WORKED_TOKEN=<redacted:WORKED_TOKEN> run-fixture",
+      "sha256": "bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb"
+     },
      "redaction_policy": "redaction-contract/1",
      "schema": "redaction.fixture.input/1",
      "secrets": [
       {
-       "name": "AUTH_TOKEN",
-       "source": "env:AUTH_TOKEN",
-       "value": "<redacted:AUTH_TOKEN>"
-      },
-      {
-       "name": "API_KEY",
-       "source": "env:API_KEY",
-       "value": "<redacted:API_KEY>"
+       "name": "WORKED_TOKEN",
+       "source": "env:WORKED_TOKEN",
+       "value": "<redacted:WORKED_TOKEN>"
       }
-     ],
-     "stderr": "retry with API key <redacted:API_KEY>",
-     "stdout": "AUTH=<redacted:AUTH_TOKEN>\nfinished"
+     ]
     },
     "record": {
-     "case_id": "stdout-stderr",
+     "case_id": "worked-redact-00-headers-manifest",
+     "manifest": {
+      "path_label": "artifact:worked",
+      "rerun": "WORKED_TOKEN=FAKE_SECRET_DO_NOT_USE_LOOP29_WORKED_REDACT_00_HEADERS_TOKEN run-fixture",
+      "sha256": "bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb"
+     },
      "schema": "redaction.fixture.input/1",
      "secrets": [
       {
-       "name": "AUTH_TOKEN",
-       "source": "env:AUTH_TOKEN",
-       "value": "FAKE_SECRET_DO_NOT_USE_LOOP29_AUTH"
-      },
-      {
-       "name": "API_KEY",
-       "source": "env:API_KEY",
-       "value": "FAKE_SECRET_DO_NOT_USE_LOOP29_API"
+       "name": "WORKED_TOKEN",
+       "source": "env:WORKED_TOKEN",
+       "value": "FAKE_SECRET_DO_NOT_USE_LOOP29_WORKED_REDACT_00_HEADERS_TOKEN"
       }
-     ],
-     "stderr": "retry with API key FAKE_SECRET_DO_NOT_USE_LOOP29_API",
-     "stdout": "AUTH=FAKE_SECRET_DO_NOT_USE_LOOP29_AUTH\nfinished"
+     ]
     }
    }
   ]
@@ -554,83 +530,67 @@
   },
   "worked": [
    {
-    "cell": "worked-long-first",
+    "cell": "worked-redact-01-overlap-stdout",
     "expect": {
-     "case_id": "long-first",
+     "case_id": "worked-redact-01-overlap-stdout",
      "redaction_policy": "redaction-contract/1",
      "schema": "redaction.fixture.input/1",
      "secrets": [
       {
-       "name": "SHORT",
-       "source": "env:SHORT",
-       "value": "<redacted:SHORT>"
-      },
-      {
-       "name": "LONG",
-       "source": "env:LONG",
-       "value": "<redacted:LONG>"
+       "name": "WORKED_TOKEN",
+       "source": "env:WORKED_TOKEN",
+       "value": "<redacted:WORKED_TOKEN>"
       }
      ],
-     "stdout": "winner <redacted:LONG>"
+     "stdout": "rerun with WORKED_TOKEN=<redacted:WORKED_TOKEN>",
+     "trace_id": "trace-worked-redact-01-overlap-001"
     },
     "record": {
-     "case_id": "long-first",
+     "case_id": "worked-redact-01-overlap-stdout",
      "schema": "redaction.fixture.input/1",
      "secrets": [
       {
-       "name": "SHORT",
-       "source": "env:SHORT",
-       "value": "FAKE_SECRET_DO_NOT_USE_LOOP29_TOKEN"
-      },
-      {
-       "name": "LONG",
-       "source": "env:LONG",
-       "value": "FAKE_SECRET_DO_NOT_USE_LOOP29_TOKEN_EXTRA"
+       "name": "WORKED_TOKEN",
+       "source": "env:WORKED_TOKEN",
+       "value": "FAKE_SECRET_DO_NOT_USE_LOOP29_WORKED_REDACT_01_OVERLAP_TOKEN"
       }
      ],
-     "stdout": "winner FAKE_SECRET_DO_NOT_USE_LOOP29_TOKEN_EXTRA"
+     "stdout": "rerun with WORKED_TOKEN=FAKE_SECRET_DO_NOT_USE_LOOP29_WORKED_REDACT_01_OVERLAP_TOKEN",
+     "trace_id": "trace-worked-redact-01-overlap-001"
     }
    },
    {
-    "cell": "worked-both-values",
+    "cell": "worked-redact-01-overlap-manifest",
     "expect": {
-     "case_id": "both-values",
-     "log": [
-      "short=<redacted:SHORT>",
-      "long=<redacted:LONG>"
-     ],
+     "case_id": "worked-redact-01-overlap-manifest",
+     "manifest": {
+      "path_label": "artifact:worked",
+      "rerun": "WORKED_TOKEN=<redacted:WORKED_TOKEN> run-fixture",
+      "sha256": "bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb"
+     },
      "redaction_policy": "redaction-contract/1",
      "schema": "redaction.fixture.input/1",
      "secrets": [
       {
-       "name": "SHORT",
-       "source": "env:SHORT",
-       "value": "<redacted:SHORT>"
-      },
-      {
-       "name": "LONG",
-       "source": "env:LONG",
-       "value": "<redacted:LONG>"
+       "name": "WORKED_TOKEN",
+       "source": "env:WORKED_TOKEN",
+       "value": "<redacted:WORKED_TOKEN>"
       }
      ]
     },
     "record": {
-     "case_id": "both-values",
-     "log": [
-      "short=FAKE_SECRET_DO_NOT_USE_LOOP29_TOKEN",
-      "long=FAKE_SECRET_DO_NOT_USE_LOOP29_TOKEN_EXTRA"
-     ],
+     "case_id": "worked-redact-01-overlap-manifest",
+     "manifest": {
+      "path_label": "artifact:worked",
+      "rerun": "WORKED_TOKEN=FAKE_SECRET_DO_NOT_USE_LOOP29_WORKED_REDACT_01_OVERLAP_TOKEN run-fixture",
+      "sha256": "bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb"
+     },
      "schema": "redaction.fixture.input/1",
      "secrets": [
       {
-       "name": "SHORT",
-       "source": "env:SHORT",
-       "value": "FAKE_SECRET_DO_NOT_USE_LOOP29_TOKEN"
-      },
-      {
-       "name": "LONG",
-       "source": "env:LONG",
-       "value": "FAKE_SECRET_DO_NOT_USE_LOOP29_TOKEN_EXTRA"
+       "name": "WORKED_TOKEN",
+       "source": "env:WORKED_TOKEN",
+       "value": "FAKE_SECRET_DO_NOT_USE_LOOP29_WORKED_REDACT_01_OVERLAP_TOKEN"
       }
      ]
     }
@@ -818,81 +778,67 @@
   },
   "worked": [
    {
-    "cell": "worked-secret-ref-object",
+    "cell": "worked-redact-02-refs-stdout",
     "expect": {
-     "case_id": "secret-ref-object",
-     "config": {
-      "authorization": {
-       "secret_ref": "AUTH_TOKEN"
-      }
-     },
+     "case_id": "worked-redact-02-refs-stdout",
      "redaction_policy": "redaction-contract/1",
      "schema": "redaction.fixture.input/1",
      "secrets": [
       {
-       "name": "AUTH_TOKEN",
-       "source": "env:AUTH_TOKEN",
-       "value": "<redacted:AUTH_TOKEN>"
+       "name": "WORKED_TOKEN",
+       "source": "env:WORKED_TOKEN",
+       "value": "<redacted:WORKED_TOKEN>"
       }
-     ]
+     ],
+     "stdout": "rerun with WORKED_TOKEN=<redacted:WORKED_TOKEN>",
+     "trace_id": "trace-worked-redact-02-refs-001"
     },
     "record": {
-     "case_id": "secret-ref-object",
-     "config": {
-      "authorization": {
-       "secret_ref": "AUTH_TOKEN"
-      }
-     },
+     "case_id": "worked-redact-02-refs-stdout",
      "schema": "redaction.fixture.input/1",
      "secrets": [
       {
-       "name": "AUTH_TOKEN",
-       "source": "env:AUTH_TOKEN",
-       "value": "FAKE_SECRET_DO_NOT_USE_LOOP29_REF_AUTH"
+       "name": "WORKED_TOKEN",
+       "source": "env:WORKED_TOKEN",
+       "value": "FAKE_SECRET_DO_NOT_USE_LOOP29_WORKED_REDACT_02_REFS_TOKEN"
       }
-     ]
+     ],
+     "stdout": "rerun with WORKED_TOKEN=FAKE_SECRET_DO_NOT_USE_LOOP29_WORKED_REDACT_02_REFS_TOKEN",
+     "trace_id": "trace-worked-redact-02-refs-001"
     }
    },
    {
-    "cell": "worked-ref-plus-raw",
+    "cell": "worked-redact-02-refs-manifest",
     "expect": {
-     "case_id": "ref-plus-raw",
-     "config": {
-      "authorization": {
-       "secret_ref": "AUTH_TOKEN"
-      }
+     "case_id": "worked-redact-02-refs-manifest",
+     "manifest": {
+      "path_label": "artifact:worked",
+      "rerun": "WORKED_TOKEN=<redacted:WORKED_TOKEN> run-fixture",
+      "sha256": "bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb"
      },
-     "log": [
-      "debug raw <redacted:AUTH_TOKEN>",
-      "rerun with secret_ref AUTH_TOKEN"
-     ],
      "redaction_policy": "redaction-contract/1",
      "schema": "redaction.fixture.input/1",
      "secrets": [
       {
-       "name": "AUTH_TOKEN",
-       "source": "env:AUTH_TOKEN",
-       "value": "<redacted:AUTH_TOKEN>"
+       "name": "WORKED_TOKEN",
+       "source": "env:WORKED_TOKEN",
+       "value": "<redacted:WORKED_TOKEN>"
       }
      ]
     },
     "record": {
-     "case_id": "ref-plus-raw",
-     "config": {
-      "authorization": {
-       "secret_ref": "AUTH_TOKEN"
-      }
+     "case_id": "worked-redact-02-refs-manifest",
+     "manifest": {
+      "path_label": "artifact:worked",
+      "rerun": "WORKED_TOKEN=FAKE_SECRET_DO_NOT_USE_LOOP29_WORKED_REDACT_02_REFS_TOKEN run-fixture",
+      "sha256": "bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb"
      },
-     "log": [
-      "debug raw FAKE_SECRET_DO_NOT_USE_LOOP29_REF_AUTH",
-      "rerun with secret_ref AUTH_TOKEN"
-     ],
      "schema": "redaction.fixture.input/1",
      "secrets": [
       {
-       "name": "AUTH_TOKEN",
-       "source": "env:AUTH_TOKEN",
-       "value": "FAKE_SECRET_DO_NOT_USE_LOOP29_REF_AUTH"
+       "name": "WORKED_TOKEN",
+       "source": "env:WORKED_TOKEN",
+       "value": "FAKE_SECRET_DO_NOT_USE_LOOP29_WORKED_REDACT_02_REFS_TOKEN"
       }
      ]
     }
@@ -1092,71 +1038,67 @@
   },
   "worked": [
    {
-    "cell": "worked-manifest-public",
+    "cell": "worked-redact-03-manifest-stdout",
     "expect": {
-     "case_id": "manifest-public",
-     "manifest": {
-      "bytes": 128,
-      "collection_status": "collected",
-      "path_label": "artifact:manifest",
-      "sha256": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa"
-     },
+     "case_id": "worked-redact-03-manifest-stdout",
      "redaction_policy": "redaction-contract/1",
      "schema": "redaction.fixture.input/1",
      "secrets": [
       {
-       "name": "SESSION_KEY",
-       "source": "env:SESSION_KEY",
-       "value": "<redacted:SESSION_KEY>"
+       "name": "WORKED_TOKEN",
+       "source": "env:WORKED_TOKEN",
+       "value": "<redacted:WORKED_TOKEN>"
       }
-     ]
+     ],
+     "stdout": "rerun with WORKED_TOKEN=<redacted:WORKED_TOKEN>",
+     "trace_id": "trace-worked-redact-03-manifest-001"
     },
     "record": {
-     "case_id": "manifest-public",
-     "manifest": {
-      "bytes": 128,
-      "collection_status": "collected",
-      "path_label": "artifact:manifest",
-      "sha256": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa"
-     },
+     "case_id": "worked-redact-03-manifest-stdout",
      "schema": "redaction.fixture.input/1",
      "secrets": [
       {
-       "name": "SESSION_KEY",
-       "source": "env:SESSION_KEY",
-       "value": "FAKE_SECRET_DO_NOT_USE_LOOP29_SESSION"
+       "name": "WORKED_TOKEN",
+       "source": "env:WORKED_TOKEN",
+       "value": "FAKE_SECRET_DO_NOT_USE_LOOP29_WORKED_REDACT_03_MANIFEST_TOKEN"
       }
-     ]
+     ],
+     "stdout": "rerun with WORKED_TOKEN=FAKE_SECRET_DO_NOT_USE_LOOP29_WORKED_REDACT_03_MANIFEST_TOKEN",
+     "trace_id": "trace-worked-redact-03-manifest-001"
     }
    },
    {
-    "cell": "worked-manifest-command",
+    "cell": "worked-redact-03-manifest-manifest",
     "expect": {
-     "case_id": "manifest-command",
+     "case_id": "worked-redact-03-manifest-manifest",
      "manifest": {
-      "rerun": "SESSION_KEY=<redacted:SESSION_KEY> run-eval"
+      "path_label": "artifact:worked",
+      "rerun": "WORKED_TOKEN=<redacted:WORKED_TOKEN> run-fixture",
+      "sha256": "bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb"
      },
      "redaction_policy": "redaction-contract/1",
      "schema": "redaction.fixture.input/1",
      "secrets": [
       {
-       "name": "SESSION_KEY",
-       "source": "env:SESSION_KEY",
-       "value": "<redacted:SESSION_KEY>"
+       "name": "WORKED_TOKEN",
+       "source": "env:WORKED_TOKEN",
+       "value": "<redacted:WORKED_TOKEN>"
       }
      ]
     },
     "record": {
-     "case_id": "manifest-command",
+     "case_id": "worked-redact-03-manifest-manifest",
      "manifest": {
-      "rerun": "SESSION_KEY=FAKE_SECRET_DO_NOT_USE_LOOP29_SESSION run-eval"
+      "path_label": "artifact:worked",
+      "rerun": "WORKED_TOKEN=FAKE_SECRET_DO_NOT_USE_LOOP29_WORKED_REDACT_03_MANIFEST_TOKEN run-fixture",
+      "sha256": "bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb"
      },
      "schema": "redaction.fixture.input/1",
      "secrets": [
       {
-       "name": "SESSION_KEY",
-       "source": "env:SESSION_KEY",
-       "value": "FAKE_SECRET_DO_NOT_USE_LOOP29_SESSION"
+       "name": "WORKED_TOKEN",
+       "source": "env:WORKED_TOKEN",
+       "value": "FAKE_SECRET_DO_NOT_USE_LOOP29_WORKED_REDACT_03_MANIFEST_TOKEN"
       }
      ]
     }

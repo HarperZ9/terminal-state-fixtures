@@ -164,6 +164,55 @@ def build_redaction_contract() -> dict:
     return out
 
 
+def _declared_raw_secret_values(record: dict) -> list[str]:
+    rows = record.get("secrets") or []
+    values = []
+    for item in rows:
+        if not isinstance(item, dict):
+            continue
+        raw = item.get("value")
+        if isinstance(raw, str) and raw:
+            values.append(raw)
+    return values
+
+
+def assert_redaction_expected_safe(data: dict) -> int:
+    """Fail closed if any expected output contains a declared raw secret.
+
+    The scan derives raw values from each row's own ``record['secrets']``
+    declarations, so it catches non-standard synthetic values as well as the
+    standard ``FAKE_SECRET_DO_NOT_USE_LOOP29`` marker family.
+    """
+    checked_values = 0
+    for variant_id, entry in sorted(data.items()):
+        if not isinstance(entry, dict):
+            raise ValueError(f"{variant_id}: redaction entry must be a dict")
+        for section in ("fixtures", "worked"):
+            rows = entry.get(section)
+            if not isinstance(rows, list):
+                raise ValueError(f"{variant_id}: {section} must be a list")
+            for row in rows:
+                if not isinstance(row, dict):
+                    raise ValueError(f"{variant_id}/{section}: row must be a dict")
+                cell = row.get("cell", "<unknown>")
+                record = row.get("record")
+                if not isinstance(record, dict):
+                    raise ValueError(
+                        f"{variant_id}/{section}/{cell}: record must be a dict"
+                    )
+                expected = json.dumps(
+                    row.get("expect"), sort_keys=True, ensure_ascii=True
+                )
+                for raw in _declared_raw_secret_values(record):
+                    checked_values += 1
+                    if raw in expected:
+                        raise ValueError(
+                            "declared raw secret leaked into expected JSON at "
+                            f"{variant_id}/{section}/{cell}"
+                        )
+    return checked_values
+
+
 def _dumps(data: dict) -> str:
     return json.dumps(data, indent=1, sort_keys=True, ensure_ascii=True) + "\n"
 
@@ -204,25 +253,25 @@ def main() -> int:
         f"(min {rewards[0]}, max {rewards[-1]}), {len(first)} bytes"
     )
 
-    first = _dumps(build_redaction_contract())
+    redaction_data = build_redaction_contract()
+    first = _dumps(redaction_data)
     second = _dumps(build_redaction_contract())
     if first != second:
         print("FATAL: redaction_contract generator is not deterministic", file=sys.stderr)
+        return 1
+    try:
+        n_checked_raw = assert_redaction_expected_safe(redaction_data)
+    except ValueError as e:
+        print(f"FATAL: {e}", file=sys.stderr)
         return 1
     (DATA_DIR / "redaction_contract.json").write_text(
         first, encoding="utf-8", newline="\n"
     )
     data = json.loads(first)
     n_fx = sum(len(v["fixtures"]) for v in data.values())
-    n_raw_expected = sum(
-        1
-        for v in data.values()
-        for row in v["fixtures"] + v["worked"]
-        if red.SECRET_PREFIX in json.dumps(row["expect"], sort_keys=True)
-    )
     print(
         f"redaction_contract.json: {len(data)} variants, {n_fx} fixtures, "
-        f"{n_raw_expected} raw markers in expected outputs, {len(first)} bytes"
+        f"0 declared raw secret leaks across {n_checked_raw} values, {len(first)} bytes"
     )
     return 0
 
