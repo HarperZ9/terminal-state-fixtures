@@ -38,6 +38,26 @@ toolchain; the hub page carries the install command for your setup.
 Full task, dataset, and reward spec:
 [environments/mlflow_terminal_state/README.md](environments/mlflow_terminal_state/README.md).
 
+### verifiers-component-forge
+
+Write and repair verifiers components against terminal-state contracts. The
+environment includes parser-contract, rubric-contract, rubric-repair,
+referee-protocol, and synthetic redaction contract families (337 cases,
+~5,000 frozen probe comparisons). The repair family shows the agent one
+mutated environment module plus its normative contract; credit concentrates
+on hidden fixtures that distinguish broken from repaired behavior, so
+returning the broken module verbatim scores at most the frozen regression
+share. The referee-protocol family has the agent build a deterministic
+multiturn referee; scoring replays canned player scripts through the real
+MultiTurnEnv rollout loop and compares transcripts, rewards, and stop
+reasons, with an independent pure fold of each state machine cross-checking
+every frozen expectation. The redaction family uses fake secret markers
+only, scores terminal JSON output, and pins that expected outputs preserve
+public metadata while removing every raw marker value.
+
+Reproduce:
+[environments/verifiers-component-forge/REPRODUCE.md](environments/verifiers-component-forge/REPRODUCE.md).
+
 ## The claims are tests
 
 The spec's validation claims are pinned in
@@ -51,6 +71,12 @@ cd environments/mlflow_terminal_state
 uv venv && uv pip install verifiers pytest
 uv run pytest tests/ -q
 ```
+
+The component-forge claims are pinned in
+[environments/verifiers-component-forge/tests](environments/verifiers-component-forge/tests):
+frozen data regenerates deterministically, reference components score 1.0,
+known-bad implementations fail, and redacted expected outputs contain no raw
+synthetic secret markers.
 
 ## Reusing the pattern
 
