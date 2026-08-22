@@ -19,9 +19,14 @@ from pathlib import Path
 ROOT = Path(__file__).resolve().parents[1]
 sys.path.insert(0, str(ROOT))
 
+from gen_redaction import (  # noqa: E402,F401 -- re-exported for tests
+    _declared_raw_secret_values,
+    assert_redaction_expected_safe,
+    build_redaction_contract,
+)
+from gen_rubric_repair import build_rubric_repair  # noqa: E402,F401
 from verifiers_component_forge.families import parser_contract as pc  # noqa: E402
 from verifiers_component_forge.families import parser_contract_grammar as pcg  # noqa: E402
-from verifiers_component_forge.families import redaction_contract as red  # noqa: E402
 from verifiers_component_forge.families import rubric_contract as rc  # noqa: E402
 from verifiers_component_forge.families import rubric_contract_grammar as rcg  # noqa: E402
 from verifiers_component_forge.harness.child_driver_parser import (  # noqa: E402
@@ -141,78 +146,6 @@ def build_rubric_contract() -> dict:
     return out
 
 
-def build_redaction_contract() -> dict:
-    out: dict[str, dict] = {}
-    for variant in red.all_variants():
-        rows = []
-        for fixture in red.fixtures_for(variant):
-            rows.append(
-                {
-                    "cell": fixture["cell"],
-                    "record": fixture["record"],
-                    "expect": red.reference_redact(fixture["record"]),
-                }
-            )
-        out[variant.variant_id] = {
-            "variant": {
-                "title": variant.title,
-                "purpose": variant.purpose,
-            },
-            "worked": red.worked_for(variant),
-            "fixtures": rows,
-        }
-    return out
-
-
-def _declared_raw_secret_values(record: dict) -> list[str]:
-    rows = record.get("secrets") or []
-    values = []
-    for item in rows:
-        if not isinstance(item, dict):
-            continue
-        raw = item.get("value")
-        if isinstance(raw, str) and raw:
-            values.append(raw)
-    return values
-
-
-def assert_redaction_expected_safe(data: dict) -> int:
-    """Fail closed if any expected output contains a declared raw secret.
-
-    The scan derives raw values from each row's own ``record['secrets']``
-    declarations, so it catches non-standard synthetic values as well as the
-    standard ``FAKE_SECRET_DO_NOT_USE_LOOP29`` marker family.
-    """
-    checked_values = 0
-    for variant_id, entry in sorted(data.items()):
-        if not isinstance(entry, dict):
-            raise ValueError(f"{variant_id}: redaction entry must be a dict")
-        for section in ("fixtures", "worked"):
-            rows = entry.get(section)
-            if not isinstance(rows, list):
-                raise ValueError(f"{variant_id}: {section} must be a list")
-            for row in rows:
-                if not isinstance(row, dict):
-                    raise ValueError(f"{variant_id}/{section}: row must be a dict")
-                cell = row.get("cell", "<unknown>")
-                record = row.get("record")
-                if not isinstance(record, dict):
-                    raise ValueError(
-                        f"{variant_id}/{section}/{cell}: record must be a dict"
-                    )
-                expected = json.dumps(
-                    row.get("expect"), sort_keys=True, ensure_ascii=True
-                )
-                for raw in _declared_raw_secret_values(record):
-                    checked_values += 1
-                    if raw in expected:
-                        raise ValueError(
-                            "declared raw secret leaked into expected JSON at "
-                            f"{variant_id}/{section}/{cell}"
-                        )
-    return checked_values
-
-
 def _dumps(data: dict) -> str:
     return json.dumps(data, indent=1, sort_keys=True, ensure_ascii=True) + "\n"
 
@@ -251,6 +184,25 @@ def main() -> int:
         f"rubric_contract.json: {len(data)} contracts, {n_fx} fixtures, "
         f"{len(rewards)} distinct rewards "
         f"(min {rewards[0]}, max {rewards[-1]}), {len(first)} bytes"
+    )
+
+    first = _dumps(build_rubric_repair())
+    second = _dumps(build_rubric_repair())
+    if first != second:
+        print("FATAL: rubric_repair generator is not deterministic", file=sys.stderr)
+        return 1
+    (DATA_DIR / "rubric_repair.json").write_text(first, encoding="utf-8", newline="\n")
+    data = json.loads(first)
+    n_fx = sum(len(v["fixtures"]) for v in data.values())
+    n_kill = sum(
+        1 for v in data.values() for p in v["fixtures"] if p["kill"]
+    )
+    n_gate = sum(1 for v in data.values() if v["gate_breaking"])
+    worst_noop = max(v["noop_score"] for v in data.values())
+    print(
+        f"rubric_repair.json: {len(data)} instances, {n_fx} hidden fixtures "
+        f"({n_kill} kills), {n_gate} gate-breaking, worst no-op "
+        f"{worst_noop}, {len(first)} bytes"
     )
 
     redaction_data = build_redaction_contract()

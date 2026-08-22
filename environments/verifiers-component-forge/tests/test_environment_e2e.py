@@ -68,7 +68,7 @@ async def _score(env, row, reply_text: str) -> State:
 def test_reference_reply_scores_one_through_the_real_environment():
     env = forge.load_environment()
     dataset = env.get_dataset()
-    assert len(dataset) == 196  # 96 parser + 96 rubric + 4 redaction
+    assert len(dataset) == 273  # 96 parser + 96 rubric + 77 repair + 4 redaction
     row = dataset[0]
     assert row["info"]["family"] == "parser-contract"
     frozen = forge._load_frozen("parser_contract.json")

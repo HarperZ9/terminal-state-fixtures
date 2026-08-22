@@ -104,6 +104,7 @@ class LastPythonFenceParser(vf.Parser):
 def load_environment(**kwargs) -> vf.Environment:
     frozen_parser = _load_frozen("parser_contract.json")
     frozen_rubric = _load_frozen("rubric_contract.json")
+    frozen_repair = _load_frozen("rubric_repair.json")
     frozen_redaction = _load_frozen("redaction_contract.json")
     parser = LastPythonFenceParser()
 
@@ -112,6 +113,7 @@ def load_environment(**kwargs) -> vf.Environment:
     from .families.redaction_contract import RedactionVariant
     from .families.redaction_contract_prompt import render_prompt as render_redaction_prompt
     from .families.rubric_contract_prompt import render_prompt as render_rubric_prompt
+    from .families.rubric_repair_prompt import render_prompt as render_repair_prompt
 
     for variant_id in sorted(frozen_parser):
         entry = frozen_parser[variant_id]
@@ -133,6 +135,15 @@ def load_environment(**kwargs) -> vf.Environment:
                 "question": render_rubric_prompt(entry["contract"], entry["worked"]),
                 "answer": variant_id,
                 "info": {"family": "rubric-contract", "variant_id": variant_id},
+            }
+        )
+    for variant_id in sorted(frozen_repair):
+        entry = frozen_repair[variant_id]
+        rows.append(
+            {
+                "question": render_repair_prompt(entry),
+                "answer": variant_id,
+                "info": {"family": "rubric-repair", "variant_id": variant_id},
             }
         )
     for variant_id in sorted(frozen_redaction):
@@ -186,9 +197,12 @@ def load_environment(**kwargs) -> vf.Environment:
         outcome = {"results": result.payload["results"], "gate": gate}
         if not all(gate.values()):
             return outcome, 0.0
+        # rubric-contract fixtures are uniform; rubric-repair fixtures carry
+        # frozen kill-set/regression weights.
         score = runner.match_fraction(
             result.payload["results"],
             [p["expect"] for p in entry["fixtures"]],
+            [p.get("weight", 1.0) for p in entry["fixtures"]],
         )
         return outcome, score
 
@@ -215,9 +229,14 @@ def load_environment(**kwargs) -> vf.Environment:
             outcome, score = await _run_parser_family(
                 module_source, frozen_parser[info["variant_id"]]
             )
-        elif info["family"] == "rubric-contract":
+        elif info["family"] in ("rubric-contract", "rubric-repair"):
+            frozen = (
+                frozen_rubric
+                if info["family"] == "rubric-contract"
+                else frozen_repair
+            )
             outcome, score = await _run_rubric_family(
-                module_source, frozen_rubric[info["variant_id"]]
+                module_source, frozen[info["variant_id"]]
             )
         else:
             outcome, score = await _run_redaction_family(

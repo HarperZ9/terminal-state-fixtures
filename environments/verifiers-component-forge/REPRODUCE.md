@@ -26,6 +26,22 @@ The generator builds each frozen JSON file twice in one process and refuses to
 write if either build differs. Test coverage then compares the committed files
 against fresh regeneration.
 
+## Rubric-repair kill-check
+
+The `rubric-repair` family ships only mutants that flip at least two battery
+fixtures under the installed verifiers, so one flip is shown as the visible
+symptom while at least one stays hidden and scored. The generator refused the
+`guard-dropped` operator wholesale: verifiers itself scores a raising reward
+function as 0.0, which makes removing the reference's try/except behaviorally
+invisible, and a non-discriminating mutant never ships. The frozen file
+records a no-op ceiling per instance (0.0 for gate-breaking mutants, the
+regression share 0.15 otherwise); tests assert every ceiling and replay a
+sample through the real child driver.
+
+```bash
+uv run --python 3.13 --prerelease=allow --with pytest python -m pytest tests/test_rubric_repair.py -q
+```
+
 ## Redaction-contract public-safety check
 
 The `redaction-contract` family uses only fake marker values with the prefix

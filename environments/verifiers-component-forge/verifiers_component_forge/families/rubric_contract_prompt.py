@@ -45,29 +45,34 @@ def _criterion_prose(name: str, kind: str, param: object) -> str:
     return f"`{name}`: {text}"
 
 
-def render_prompt(contract: dict, worked: list[dict]) -> str:
+DELIVERABLE_PROSE = (
+    "Your module must define `load_environment(**kwargs)` returning a "
+    "`vf.SingleTurnEnv` whose `vf.Rubric` implements this contract "
+    "through the library's own reward-function machinery: "
+    "`vf.Rubric(funcs=[...], weights=[...])`, one function per criterion, "
+    "function `__name__`s exactly equal to the criterion names, in the "
+    "contract's order, with exactly the contract's weight vector. Do not "
+    "replace or override the rubric's scoring loop. A one-row stub "
+    'dataset (`[{"question": "stub", "answer": "stub"}]`) is the blessed '
+    "minimal dataset. Reward functions receive `completion`, `answer`, "
+    "and `info` as keyword arguments; `completion` is a plain string."
+)
+
+EMISSION_LINES = (
+    "## Emission protocol",
+    "",
+    "Reply with your complete module in a single ```python code fence. "
+    "Extraction takes everything between the LAST ```python opener and "
+    "the LAST ``` in your reply. The module must import nothing beyond "
+    "the Python standard library, `verifiers`, and `datasets`.",
+)
+
+
+def contract_lines(contract: dict) -> list[str]:
+    """The criteria table and rules sections, shared verbatim by the
+    rubric-contract prompt and the rubric-repair REWARD.md."""
     lines: list[str] = []
     a = lines.append
-    a(
-        "Write a Python module implementing EXACTLY the scoring contract "
-        "below as a verifiers environment."
-    )
-    a("")
-    a("## Deliverable")
-    a("")
-    a(
-        "Your module must define `load_environment(**kwargs)` returning a "
-        "`vf.SingleTurnEnv` whose `vf.Rubric` implements this contract "
-        "through the library's own reward-function machinery: "
-        "`vf.Rubric(funcs=[...], weights=[...])`, one function per criterion, "
-        "function `__name__`s exactly equal to the criterion names, in the "
-        "contract's order, with exactly the contract's weight vector. Do not "
-        "replace or override the rubric's scoring loop. A one-row stub "
-        'dataset (`[{"question": "stub", "answer": "stub"}]`) is the blessed '
-        "minimal dataset. Reward functions receive `completion`, `answer`, "
-        "and `info` as keyword arguments; `completion` is a plain string."
-    )
-    a("")
     a("## Criteria, in order")
     a("")
     for (name, kind, param), weight in zip(
@@ -98,6 +103,22 @@ def render_prompt(contract: dict, worked: list[dict]) -> str:
             '- The key `"excluded"`, if present in info, is ordinary data. '
             "Ignore it; no criterion changes behavior because of it."
         )
+    return lines
+
+
+def render_prompt(contract: dict, worked: list[dict]) -> str:
+    lines: list[str] = []
+    a = lines.append
+    a(
+        "Write a Python module implementing EXACTLY the scoring contract "
+        "below as a verifiers environment."
+    )
+    a("")
+    a("## Deliverable")
+    a("")
+    a(DELIVERABLE_PROSE)
+    a("")
+    lines += contract_lines(contract)
     a("")
     a("## Worked rows (illustrative only; never scored; values rounded to 4dp)")
     a("")
@@ -114,12 +135,5 @@ def render_prompt(contract: dict, worked: list[dict]) -> str:
             f"metrics {json.dumps(metrics, sort_keys=True)}"
         )
         a("")
-    a("## Emission protocol")
-    a("")
-    a(
-        "Reply with your complete module in a single ```python code fence. "
-        "Extraction takes everything between the LAST ```python opener and "
-        "the LAST ``` in your reply. The module must import nothing beyond "
-        "the Python standard library, `verifiers`, and `datasets`."
-    )
+    lines += EMISSION_LINES
     return "\n".join(lines)
