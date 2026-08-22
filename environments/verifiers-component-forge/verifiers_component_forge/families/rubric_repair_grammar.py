@@ -13,6 +13,7 @@ reference and the broken module through the real verifiers machinery over
 this battery, freezes the reference outputs, and derives kill flags from the
 disagreements.
 """
+
 from __future__ import annotations
 
 from .rubric_contract import Contract
@@ -50,7 +51,8 @@ def battery_for(contract: Contract) -> list[dict]:
     add("whitespace-pad-leading", " " + answer)
     add("empty-completion", "")
     if "len_under" in kinds:
-        n = int(kinds["len_under"].param)  # type: ignore[arg-type]
+        n = kinds["len_under"].param
+        assert isinstance(n, int)
         add("len-at-boundary-alt", "y" * n)
     if "info_ratio" in kinds:
         add("ratio-clamped-negative", answer, {kinds["info_ratio"].param: -0.4})

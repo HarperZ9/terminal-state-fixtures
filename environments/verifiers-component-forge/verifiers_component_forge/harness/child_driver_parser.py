@@ -23,6 +23,7 @@ The agent module must export ``build_parser()`` returning the parser object
 whose ``parse_answer`` is probed. Oracle expectations never reach this
 process; the parent compares.
 """
+
 from __future__ import annotations
 
 import json
@@ -62,11 +63,19 @@ def main() -> int:
     # the defining module through sys.modules.
     sys.modules["agent_module"] = module
     try:
-        exec(compile(request["module_source"], "<agent_module>", "exec"), module.__dict__)
+        exec(  # noqa: S102 -- executing the agent module is the driver's job
+            compile(request["module_source"], "<agent_module>", "exec"), module.__dict__
+        )
         build_parser = module.build_parser  # type: ignore[attr-defined]
         parser = build_parser()
     except BaseException as e:  # noqa: BLE001 -- a broken module fails all probes, reported not raised
-        json.dump({"results": [{"error": f"module: {type(e).__name__}: {e}"}] * len(request["inputs"])}, sys.stdout)
+        json.dump(
+            {
+                "results": [{"error": f"module: {type(e).__name__}: {e}"}]
+                * len(request["inputs"])
+            },
+            sys.stdout,
+        )
         return 0
 
     results: list[object] = []
@@ -74,7 +83,11 @@ def main() -> int:
         try:
             completion = _build_completion(recipe)
             value = parser.parse_answer(completion)
-            results.append(value if isinstance(value, str) or value is None else {"error": f"non-string result: {type(value).__name__}"})
+            results.append(
+                value
+                if isinstance(value, str) or value is None
+                else {"error": f"non-string result: {type(value).__name__}"}
+            )
         except BaseException as e:  # noqa: BLE001 -- per-probe containment
             results.append({"error": f"{type(e).__name__}: {e}"})
 

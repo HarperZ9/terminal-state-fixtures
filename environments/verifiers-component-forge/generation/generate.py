@@ -10,6 +10,7 @@ the variant table changed, never ambient state:
 Determinism is asserted, not assumed: the file is built twice in-process and
 byte-compared before it is written.
 """
+
 from __future__ import annotations
 
 import json
@@ -19,17 +20,23 @@ from pathlib import Path
 ROOT = Path(__file__).resolve().parents[1]
 sys.path.insert(0, str(ROOT))
 
-from gen_redaction import (  # noqa: E402,F401 -- re-exported for tests
+from gen_redaction import (  # noqa: F401 -- re-exported for tests
     _declared_raw_secret_values,
     assert_redaction_expected_safe,
     build_redaction_contract,
 )
-from gen_rubric_repair import build_rubric_repair  # noqa: E402,F401
-from verifiers_component_forge.families import parser_contract as pc  # noqa: E402
-from verifiers_component_forge.families import parser_contract_grammar as pcg  # noqa: E402
-from verifiers_component_forge.families import rubric_contract as rc  # noqa: E402
-from verifiers_component_forge.families import rubric_contract_grammar as rcg  # noqa: E402
-from verifiers_component_forge.harness.child_driver_parser import (  # noqa: E402
+from gen_referee_protocol import build_referee_protocol
+from gen_rubric_repair import build_rubric_repair
+
+from verifiers_component_forge.families import parser_contract as pc
+from verifiers_component_forge.families import (
+    parser_contract_grammar as pcg,
+)
+from verifiers_component_forge.families import rubric_contract as rc
+from verifiers_component_forge.families import (
+    rubric_contract_grammar as rcg,
+)
+from verifiers_component_forge.harness.child_driver_parser import (
     _build_completion,
 )
 
@@ -80,13 +87,13 @@ def build_rubric_contract() -> dict:
         source = rc.reference_module_source(contract)
         module = types.ModuleType("reference_module")
         sys.modules["reference_module"] = module
-        exec(compile(source, "<reference_module>", "exec"), module.__dict__)
+        exec(compile(source, "<reference_module>", "exec"), module.__dict__)  # noqa: S102 -- executing our own reference source is the design
         env = module.load_environment()
         rubric = env.rubric
         if isinstance(rubric, vf.RubricGroup):
             rubric = rubric.rubrics[0]
 
-        async def score(fixture: dict) -> dict:
+        async def score(fixture: dict, rubric=rubric) -> dict:
             state = State(
                 {
                     "prompt": fixture["prompt"],
@@ -158,12 +165,12 @@ def main() -> int:
     if first != second:
         print("FATAL: parser_contract generator is not deterministic", file=sys.stderr)
         return 1
-    (DATA_DIR / "parser_contract.json").write_text(first, encoding="utf-8", newline="\n")
+    (DATA_DIR / "parser_contract.json").write_text(
+        first, encoding="utf-8", newline="\n"
+    )
     data = json.loads(first)
     n_probes = sum(len(v["probes"]) for v in data.values())
-    n_none = sum(
-        1 for v in data.values() for p in v["probes"] if p["expect"] is None
-    )
+    n_none = sum(1 for v in data.values() for p in v["probes"] if p["expect"] is None)
     print(
         f"parser_contract.json: {len(data)} variants, {n_probes} probes "
         f"({n_none} expect None), {len(first)} bytes"
@@ -174,7 +181,9 @@ def main() -> int:
     if first != second:
         print("FATAL: rubric_contract generator is not deterministic", file=sys.stderr)
         return 1
-    (DATA_DIR / "rubric_contract.json").write_text(first, encoding="utf-8", newline="\n")
+    (DATA_DIR / "rubric_contract.json").write_text(
+        first, encoding="utf-8", newline="\n"
+    )
     data = json.loads(first)
     n_fx = sum(len(v["fixtures"]) for v in data.values())
     rewards = sorted(
@@ -194,9 +203,7 @@ def main() -> int:
     (DATA_DIR / "rubric_repair.json").write_text(first, encoding="utf-8", newline="\n")
     data = json.loads(first)
     n_fx = sum(len(v["fixtures"]) for v in data.values())
-    n_kill = sum(
-        1 for v in data.values() for p in v["fixtures"] if p["kill"]
-    )
+    n_kill = sum(1 for v in data.values() for p in v["fixtures"] if p["kill"])
     n_gate = sum(1 for v in data.values() if v["gate_breaking"])
     worst_noop = max(v["noop_score"] for v in data.values())
     print(
@@ -205,11 +212,32 @@ def main() -> int:
         f"{worst_noop}, {len(first)} bytes"
     )
 
+    first = _dumps(build_referee_protocol())
+    second = _dumps(build_referee_protocol())
+    if first != second:
+        print("FATAL: referee_protocol generator is not deterministic", file=sys.stderr)
+        return 1
+    (DATA_DIR / "referee_protocol.json").write_text(
+        first, encoding="utf-8", newline="\n"
+    )
+    data = json.loads(first)
+    n_scripts = sum(len(v["scripts"]) for v in data.values())
+    rewards = sorted(
+        {p["expect"]["reward"] for v in data.values() for p in v["scripts"]}
+    )
+    print(
+        f"referee_protocol.json: {len(data)} specs, {n_scripts} scripts "
+        f"(all fold-checked), {len(rewards)} distinct rewards "
+        f"(min {rewards[0]}, max {rewards[-1]}), {len(first)} bytes"
+    )
+
     redaction_data = build_redaction_contract()
     first = _dumps(redaction_data)
     second = _dumps(build_redaction_contract())
     if first != second:
-        print("FATAL: redaction_contract generator is not deterministic", file=sys.stderr)
+        print(
+            "FATAL: redaction_contract generator is not deterministic", file=sys.stderr
+        )
         return 1
     try:
         n_checked_raw = assert_redaction_expected_safe(redaction_data)

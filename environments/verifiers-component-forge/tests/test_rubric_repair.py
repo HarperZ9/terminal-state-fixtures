@@ -5,6 +5,7 @@ Hand-derived kill sets for specific operators; frozen-file invariants
 regeneration byte-match; and discrimination through the REAL environment:
 the reference module repairs every sampled instance to 1.0 while the
 verbatim broken module scores its frozen no-op ceiling."""
+
 from __future__ import annotations
 
 import asyncio
@@ -14,15 +15,15 @@ from pathlib import Path
 
 sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
 
-import verifiers as vf  # noqa: E402
-from verifiers.types import State  # noqa: E402
+import verifiers as vf
+from verifiers.types import State
 
-import verifiers_component_forge as forge  # noqa: E402
-from verifiers_component_forge.families.rubric_contract import (  # noqa: E402
+import verifiers_component_forge as forge
+from verifiers_component_forge.families.rubric_contract import (
     all_contracts,
     reference_module_source,
 )
-from verifiers_component_forge.families.rubric_repair import (  # noqa: E402
+from verifiers_component_forge.families.rubric_repair import (
     OPERATORS,
     REGRESSION_SHARE,
 )
@@ -46,6 +47,7 @@ def _contract_for(seed_vid: str):
 
 
 # ---- hand-derived kill sets -------------------------------------------------
+
 
 def test_boundary_strict_kill_set_by_hand():
     # Seed s0 = table 8, brevity bound 24. `<=` vs `<` differs ONLY at
@@ -91,6 +93,7 @@ def test_gate_breaking_operators_freeze_noop_zero():
 
 # ---- frozen-file invariants -------------------------------------------------
 
+
 def test_frozen_structure_and_ceilings():
     data = _frozen()
     assert len(data) == 77  # 83 applicable mutants minus the 6 guard-dropped
@@ -125,6 +128,7 @@ def test_frozen_matches_regeneration():
 
 
 # ---- discrimination through the real environment ----------------------------
+
 
 def _score(env, row, reply_text: str) -> State:
     rubric = env.rubric
@@ -176,8 +180,6 @@ def test_reference_repairs_and_verbatim_broken_hits_its_ceiling():
     vid3 = "rr-s0-weights-normalized"
     entry3 = data[vid3]
     row3 = _row_for(env, vid3)
-    state3 = _score(
-        env, row3, "```python\n" + entry3["broken_source"] + "\n```\n"
-    )
+    state3 = _score(env, row3, "```python\n" + entry3["broken_source"] + "\n```\n")
     assert state3["reward"] == 0.0
     assert state3["metrics"]["structural_gate_pass"] == 0.0

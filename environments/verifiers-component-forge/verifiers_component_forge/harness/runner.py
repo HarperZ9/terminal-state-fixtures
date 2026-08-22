@@ -15,6 +15,7 @@ elsewhere; Windows gets the wall clock and job-free kill only). This is a
 determinism-and-hygiene boundary, not a security sandbox, and the README says
 so.
 """
+
 from __future__ import annotations
 
 import asyncio
@@ -75,7 +76,7 @@ class ChildResult:
 async def run_child(
     driver: str,
     module_source: str,
-    inputs: dict,
+    inputs: object,
     *,
     wall_clock: float = WALL_CLOCK_SECONDS,
 ) -> ChildResult:
@@ -120,7 +121,7 @@ async def run_child(
             stdout, stderr = await asyncio.wait_for(
                 proc.communicate(request), timeout=wall_clock
             )
-        except asyncio.TimeoutError:
+        except TimeoutError:
             _kill_hard(proc)
             await proc.wait()
             return ChildResult(False, None, "timeout", "")
@@ -193,7 +194,9 @@ def match_fraction(
         raise ValueError("weights must sum to a positive value")
     earned = 0.0
     for got, want, w in zip(results, expectations, weights):
-        if _values_match(coerce_result_value(got), coerce_result_value(want), float_tolerance):
+        if _values_match(
+            coerce_result_value(got), coerce_result_value(want), float_tolerance
+        ):
             earned += w
     return earned / total
 

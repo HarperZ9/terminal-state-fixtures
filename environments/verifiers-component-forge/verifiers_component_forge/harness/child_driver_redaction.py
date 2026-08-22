@@ -4,6 +4,7 @@ Receives ``{"module_source": str, "inputs": [record, ...], "sys_paths": [...]}``
 and emits ``{"results": [dict | {"error": str}, ...]}``. Expected redacted
 outputs never enter the child; the parent compares terminal JSON state.
 """
+
 from __future__ import annotations
 
 import json
@@ -24,7 +25,9 @@ def main() -> int:
     module = types.ModuleType("agent_module")
     sys.modules["agent_module"] = module
     try:
-        exec(compile(request["module_source"], "<agent_module>", "exec"), module.__dict__)
+        exec(  # noqa: S102 -- executing the agent module is the driver's job
+            compile(request["module_source"], "<agent_module>", "exec"), module.__dict__
+        )
         redact_record = module.redact_record  # type: ignore[attr-defined]
     except BaseException as e:  # noqa: BLE001
         json.dump(

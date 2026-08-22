@@ -41,14 +41,19 @@ Full task, dataset, and reward spec:
 ### verifiers-component-forge
 
 Write and repair verifiers components against terminal-state contracts. The
-environment now includes parser-contract, rubric-contract, rubric-repair, and
-synthetic redaction contract families (273 cases, ~4,500 frozen probe
-comparisons). The repair family shows the agent one mutated environment module
-plus its normative contract; credit concentrates on hidden fixtures that
-distinguish broken from repaired behavior, so returning the broken module
-verbatim scores at most the frozen regression share. The redaction family uses
-fake secret markers only, scores terminal JSON output, and pins that expected
-outputs preserve public metadata while removing every raw marker value.
+environment includes parser-contract, rubric-contract, rubric-repair,
+referee-protocol, and synthetic redaction contract families (337 cases,
+~5,000 frozen probe comparisons). The repair family shows the agent one
+mutated environment module plus its normative contract; credit concentrates
+on hidden fixtures that distinguish broken from repaired behavior, so
+returning the broken module verbatim scores at most the frozen regression
+share. The referee-protocol family has the agent build a deterministic
+multiturn referee; scoring replays canned player scripts through the real
+MultiTurnEnv rollout loop and compares transcripts, rewards, and stop
+reasons, with an independent pure fold of each state machine cross-checking
+every frozen expectation. The redaction family uses fake secret markers
+only, scores terminal JSON output, and pins that expected outputs preserve
+public metadata while removing every raw marker value.
 
 Reproduce:
 [environments/verifiers-component-forge/REPRODUCE.md](environments/verifiers-component-forge/REPRODUCE.md).

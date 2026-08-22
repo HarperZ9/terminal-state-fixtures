@@ -5,6 +5,7 @@ real behavior the fixture is meant to pin: preserve provenance metadata, replace
 raw secret values everywhere they appear in terminal JSON output, and retain
 safe secret references so rerun instructions stay useful.
 """
+
 from __future__ import annotations
 
 from dataclasses import dataclass
@@ -259,7 +260,10 @@ def fixtures_for(variant: RedactionVariant) -> list[dict]:
                     "multi-artifact",
                     secrets,
                     artifacts=[
-                        {"path_label": "artifact:stdout", "preview": f"session={session}"},
+                        {
+                            "path_label": "artifact:stdout",
+                            "preview": f"session={session}",
+                        },
                         {"path_label": "artifact:stderr", "preview": "no secret"},
                     ],
                 ),
@@ -358,7 +362,7 @@ def reference_redact(record: dict) -> dict:
 
 
 def reference_module_source() -> str:
-    return '''POLICY = "redaction-contract/1"
+    return """POLICY = "redaction-contract/1"
 
 def _secret_pairs(record):
     rows = record.get("secrets") or []
@@ -388,4 +392,4 @@ def redact_record(record):
     out = _walk(record, _secret_pairs(record))
     out["redaction_policy"] = POLICY
     return out
-'''
+"""

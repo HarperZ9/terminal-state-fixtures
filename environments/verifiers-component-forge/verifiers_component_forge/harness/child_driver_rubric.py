@@ -29,6 +29,7 @@ vector equals the contract. Scoring semantics beyond that are established by
 the fixture replay itself, through the same call path ``vf-eval`` uses. Oracle
 expectations never reach this process; the parent compares.
 """
+
 from __future__ import annotations
 
 import asyncio
@@ -68,7 +69,9 @@ def main() -> int:
     # the defining module through sys.modules.
     sys.modules["agent_module"] = module
     try:
-        exec(compile(request["module_source"], "<agent_module>", "exec"), module.__dict__)
+        exec(  # noqa: S102 -- executing the agent module is the driver's job
+            compile(request["module_source"], "<agent_module>", "exec"), module.__dict__
+        )
         env = module.load_environment()  # type: ignore[attr-defined]
         rubric = env.rubric
         # SingleTurnEnv composes the user rubric into a RubricGroup alongside

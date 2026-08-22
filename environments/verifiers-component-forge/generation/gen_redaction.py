@@ -4,6 +4,7 @@ Moved verbatim out of generate.py to keep each generation module under the
 size gate; generate.py re-exports these names so callers and tests are
 unaffected.
 """
+
 from __future__ import annotations
 
 import json
@@ -14,7 +15,7 @@ ROOT = Path(__file__).resolve().parents[1]
 if str(ROOT) not in sys.path:
     sys.path.insert(0, str(ROOT))
 
-from verifiers_component_forge.families import redaction_contract as red  # noqa: E402
+from verifiers_component_forge.families import redaction_contract as red
 
 
 def build_redaction_contract() -> dict:
@@ -62,18 +63,18 @@ def assert_redaction_expected_safe(data: dict) -> int:
     checked_values = 0
     for variant_id, entry in sorted(data.items()):
         if not isinstance(entry, dict):
-            raise ValueError(f"{variant_id}: redaction entry must be a dict")
+            raise ValueError(f"{variant_id}: redaction entry must be a dict")  # noqa: TRY004 -- data validation, tests pin ValueError
         for section in ("fixtures", "worked"):
             rows = entry.get(section)
             if not isinstance(rows, list):
-                raise ValueError(f"{variant_id}: {section} must be a list")
+                raise ValueError(f"{variant_id}: {section} must be a list")  # noqa: TRY004 -- data validation, tests pin ValueError
             for row in rows:
                 if not isinstance(row, dict):
-                    raise ValueError(f"{variant_id}/{section}: row must be a dict")
+                    raise ValueError(f"{variant_id}/{section}: row must be a dict")  # noqa: TRY004 -- data validation, tests pin ValueError
                 cell = row.get("cell", "<unknown>")
                 record = row.get("record")
                 if not isinstance(record, dict):
-                    raise ValueError(
+                    raise ValueError(  # noqa: TRY004 -- data validation, tests pin ValueError
                         f"{variant_id}/{section}/{cell}: record must be a dict"
                     )
                 expected = json.dumps(

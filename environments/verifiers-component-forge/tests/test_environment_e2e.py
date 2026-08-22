@@ -5,6 +5,7 @@ score reward 1.0 through the environment's own parser, reward function, child
 execution, and frozen probes; a reply with no code block scores 0.0 with the
 diagnostic metrics saying why. This is the slice vf-eval will exercise, minus
 only the model."""
+
 from __future__ import annotations
 
 import asyncio
@@ -13,10 +14,10 @@ from pathlib import Path
 
 sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
 
-import verifiers as vf  # noqa: E402
-from verifiers.types import State  # noqa: E402
+import verifiers as vf
+from verifiers.types import State
 
-import verifiers_component_forge as forge  # noqa: E402
+import verifiers_component_forge as forge
 
 FAMILY_SOURCE = (
     Path(__file__).resolve().parents[1]
@@ -68,7 +69,9 @@ async def _score(env, row, reply_text: str) -> State:
 def test_reference_reply_scores_one_through_the_real_environment():
     env = forge.load_environment()
     dataset = env.get_dataset()
-    assert len(dataset) == 273  # 96 parser + 96 rubric + 77 repair + 4 redaction
+    assert (
+        len(dataset) == 337
+    )  # 96 parser + 96 rubric + 77 repair + 64 referee + 4 redaction
     row = dataset[0]
     assert row["info"]["family"] == "parser-contract"
     frozen = forge._load_frozen("parser_contract.json")
@@ -97,9 +100,7 @@ def test_rubric_reference_scores_one_and_normalizer_trips_the_gate():
 
     env = forge.load_environment()
     row = _rubric_row(env)
-    contract = next(
-        c for c in all_contracts() if c.variant_id == row["answer"]
-    )
+    contract = next(c for c in all_contracts() if c.variant_id == row["answer"])
     source = reference_module_source(contract)
 
     reply = "Implementing the contract.\n\n```python\n" + source + "\n```\n"
@@ -113,9 +114,7 @@ def test_rubric_reference_scores_one_and_normalizer_trips_the_gate():
     n = len(contract.effective_weights)
     normalized = source.replace(
         "weights=[" + ", ".join(repr(w) for w in contract.effective_weights) + "]",
-        "weights=["
-        + ", ".join(repr(w / n) for w in contract.effective_weights)
-        + "]",
+        "weights=[" + ", ".join(repr(w / n) for w in contract.effective_weights) + "]",
     )
     assert normalized != source
     reply2 = "```python\n" + normalized + "\n```\n"
@@ -163,7 +162,9 @@ def _redaction_row(env, variant_id: str = "redact-00-headers"):
     raise AssertionError(f"no redaction-contract row for {variant_id}")
 
 
-def _score_redaction_source(source: str, variant_id: str = "redact-00-headers") -> State:
+def _score_redaction_source(
+    source: str, variant_id: str = "redact-00-headers"
+) -> State:
     env = forge.load_environment()
     row = _redaction_row(env, variant_id)
     return asyncio.run(_score(env, row, "```python\n" + source + "\n```\n"))
@@ -228,7 +229,9 @@ def test_redaction_missing_function_zeroes_with_shape_gate():
 
 
 def test_redaction_non_dict_return_zeroes_with_shape_gate():
-    state = _score_redaction_source("def redact_record(record):\n    return ['not', 'a dict']")
+    state = _score_redaction_source(
+        "def redact_record(record):\n    return ['not', 'a dict']"
+    )
 
     assert state["reward"] == 0.0
     assert state["forge_outcome"]["gate"]["result_shape"] is False

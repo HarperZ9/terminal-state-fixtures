@@ -5,6 +5,7 @@ fixtures (independent of the generator); structural invariants over the
 frozen file; and the constant-1.0 floor: a module with the RIGHT names and
 weights whose every criterion returns 1.0 passes the structural gate and
 still fails the fixture battery, pinned as a ceiling."""
+
 from __future__ import annotations
 
 import asyncio
@@ -14,11 +15,11 @@ from pathlib import Path
 
 sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
 
-from verifiers_component_forge.families.rubric_contract import (  # noqa: E402
+from verifiers_component_forge.families.rubric_contract import (
     all_contracts,
     reference_module_source,
 )
-from verifiers_component_forge.harness import runner  # noqa: E402
+from verifiers_component_forge.harness import runner
 
 DATA = (
     Path(__file__).resolve().parents[1]
@@ -39,6 +40,7 @@ def _fixture(entry: dict, cell: str) -> dict:
 # ---- hand-derived arithmetic ------------------------------------------------
 # Table 0: exact_match (0.7), brevity len<=24 (0.3), length_chars (0.0).
 # answer for rc-00-excl0-neg0 is "ans-rc-00-excl0-neg0": 20 chars, under 24.
+
 
 def test_all_strong_row_by_hand():
     entry = _frozen()["rc-00-excl0-neg0"]
@@ -96,12 +98,15 @@ def test_boundary_and_clamp_and_error_rows_by_hand():
 def test_flag_truthiness_by_hand():
     # Table 2: exact (0.8), used_tool flag (0.2), length_chars (0.0).
     entry = _frozen()["rc-02-excl0-neg0"]
-    assert _fixture(entry, "flag-truthy-string")["expect"]["metrics"]["used_tool"] == 1.0
+    assert (
+        _fixture(entry, "flag-truthy-string")["expect"]["metrics"]["used_tool"] == 1.0
+    )
     assert _fixture(entry, "flag-false")["expect"]["metrics"]["used_tool"] == 0.0
     assert _fixture(entry, "flag-missing")["expect"]["metrics"]["used_tool"] == 0.0
 
 
 # ---- frozen-file invariants -------------------------------------------------
+
 
 def test_frozen_structure_and_negative_rewards_exist():
     data = _frozen()
@@ -116,7 +121,10 @@ def test_frozen_structure_and_negative_rewards_exist():
         for row in entry["fixtures"] + entry["worked"]:
             assert set(row["expect"]["metrics"].keys()) == set(names), vid
         for row in entry["worked"]:
-            assert "example" in row["fixture"]["answer"] or "Example" in row["fixture"]["completion"]
+            assert (
+                "example" in row["fixture"]["answer"]
+                or "Example" in row["fixture"]["completion"]
+            )
         if any(p["expect"]["reward"] < 0 for p in entry["fixtures"]):
             any_negative = True
     assert any_negative, "no negative-weight fixture ever fires"
@@ -132,10 +140,9 @@ def test_frozen_matches_regeneration():
 
 # ---- the constant-1.0 floor -------------------------------------------------
 
+
 def test_constant_rubric_passes_gate_but_fails_fixtures():
-    contract = next(
-        c for c in all_contracts() if c.variant_id == "rc-00-excl1-neg0"
-    )
+    contract = next(c for c in all_contracts() if c.variant_id == "rc-00-excl1-neg0")
     source = reference_module_source(contract)
     # Same names, same weights, every criterion body replaced with 1.0.
     constant = source

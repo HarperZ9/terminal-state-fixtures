@@ -22,6 +22,7 @@ the same source through the child driver, and the prompt's worked rows are
 computed from it, so contract prose, oracle, and exemplar can never drift
 apart.
 """
+
 from __future__ import annotations
 
 from dataclasses import dataclass
@@ -61,7 +62,7 @@ _EXCL_GUARD = 'if info.get("excluded") is True:\n        return 0.0\n    '
 class Criterion:
     name: str
     kind: str
-    param: object = None
+    param: str | int | None = None
 
 
 @dataclass(frozen=True)
@@ -75,8 +76,7 @@ class Contract:
     @property
     def variant_id(self) -> str:
         return (
-            f"rc-{self.table_ix:02d}"
-            f"-excl{int(self.exclusion)}-neg{int(self.negative)}"
+            f"rc-{self.table_ix:02d}-excl{int(self.exclusion)}-neg{int(self.negative)}"
         )
 
     @property
@@ -95,33 +95,237 @@ class Contract:
 _C = Criterion
 _TABLE_SPECS: tuple[tuple[tuple[Criterion, ...], tuple[float, ...]], ...] = (
     # size 3 (2 weighted + diagnostic)
-    ((_C("exact_match", "exact"), _C("brevity", "len_under", 24), _C("length_chars", "len_metric")), (0.7, 0.3, 0.0)),
-    ((_C("contains_answer", "contains"), _C("cited_confidence", "info_ratio", "confidence"), _C("word_count", "word_metric")), (0.6, 0.4, 0.0)),
-    ((_C("exact_match", "exact"), _C("used_tool", "info_flag", "tool_used"), _C("length_chars", "len_metric")), (0.8, 0.2, 0.0)),
-    ((_C("starts_capitalized", "starts_upper"), _C("exact_match", "exact"), _C("word_count", "word_metric")), (0.25, 0.75, 0.0)),
-    ((_C("cited_confidence", "info_ratio", "confidence"), _C("brevity", "len_under", 40), _C("length_chars", "len_metric")), (0.5, 0.5, 0.0)),
-    ((_C("used_tool", "info_flag", "tool_used"), _C("contains_answer", "contains"), _C("word_count", "word_metric")), (0.35, 0.65, 0.0)),
+    (
+        (
+            _C("exact_match", "exact"),
+            _C("brevity", "len_under", 24),
+            _C("length_chars", "len_metric"),
+        ),
+        (0.7, 0.3, 0.0),
+    ),
+    (
+        (
+            _C("contains_answer", "contains"),
+            _C("cited_confidence", "info_ratio", "confidence"),
+            _C("word_count", "word_metric"),
+        ),
+        (0.6, 0.4, 0.0),
+    ),
+    (
+        (
+            _C("exact_match", "exact"),
+            _C("used_tool", "info_flag", "tool_used"),
+            _C("length_chars", "len_metric"),
+        ),
+        (0.8, 0.2, 0.0),
+    ),
+    (
+        (
+            _C("starts_capitalized", "starts_upper"),
+            _C("exact_match", "exact"),
+            _C("word_count", "word_metric"),
+        ),
+        (0.25, 0.75, 0.0),
+    ),
+    (
+        (
+            _C("cited_confidence", "info_ratio", "confidence"),
+            _C("brevity", "len_under", 40),
+            _C("length_chars", "len_metric"),
+        ),
+        (0.5, 0.5, 0.0),
+    ),
+    (
+        (
+            _C("used_tool", "info_flag", "tool_used"),
+            _C("contains_answer", "contains"),
+            _C("word_count", "word_metric"),
+        ),
+        (0.35, 0.65, 0.0),
+    ),
     # size 4
-    ((_C("exact_match", "exact"), _C("brevity", "len_under", 32), _C("cited_confidence", "info_ratio", "confidence"), _C("length_chars", "len_metric")), (0.5, 0.2, 0.3, 0.0)),
-    ((_C("contains_answer", "contains"), _C("starts_capitalized", "starts_upper"), _C("used_tool", "info_flag", "tool_used"), _C("word_count", "word_metric")), (0.45, 0.15, 0.4, 0.0)),
-    ((_C("exact_match", "exact"), _C("contains_answer", "contains"), _C("brevity", "len_under", 24), _C("length_chars", "len_metric")), (0.6, 0.25, 0.15, 0.0)),
-    ((_C("cited_confidence", "info_ratio", "confidence"), _C("used_tool", "info_flag", "tool_used"), _C("exact_match", "exact"), _C("word_count", "word_metric")), (0.3, 0.3, 0.4, 0.0)),
-    ((_C("brevity", "len_under", 48), _C("cited_confidence", "info_ratio", "confidence"), _C("starts_capitalized", "starts_upper"), _C("length_chars", "len_metric")), (0.4, 0.35, 0.25, 0.0)),
-    ((_C("used_tool", "info_flag", "tool_used"), _C("exact_match", "exact"), _C("cited_confidence", "info_ratio", "confidence"), _C("word_count", "word_metric")), (0.2, 0.55, 0.25, 0.0)),
+    (
+        (
+            _C("exact_match", "exact"),
+            _C("brevity", "len_under", 32),
+            _C("cited_confidence", "info_ratio", "confidence"),
+            _C("length_chars", "len_metric"),
+        ),
+        (0.5, 0.2, 0.3, 0.0),
+    ),
+    (
+        (
+            _C("contains_answer", "contains"),
+            _C("starts_capitalized", "starts_upper"),
+            _C("used_tool", "info_flag", "tool_used"),
+            _C("word_count", "word_metric"),
+        ),
+        (0.45, 0.15, 0.4, 0.0),
+    ),
+    (
+        (
+            _C("exact_match", "exact"),
+            _C("contains_answer", "contains"),
+            _C("brevity", "len_under", 24),
+            _C("length_chars", "len_metric"),
+        ),
+        (0.6, 0.25, 0.15, 0.0),
+    ),
+    (
+        (
+            _C("cited_confidence", "info_ratio", "confidence"),
+            _C("used_tool", "info_flag", "tool_used"),
+            _C("exact_match", "exact"),
+            _C("word_count", "word_metric"),
+        ),
+        (0.3, 0.3, 0.4, 0.0),
+    ),
+    (
+        (
+            _C("brevity", "len_under", 48),
+            _C("cited_confidence", "info_ratio", "confidence"),
+            _C("starts_capitalized", "starts_upper"),
+            _C("length_chars", "len_metric"),
+        ),
+        (0.4, 0.35, 0.25, 0.0),
+    ),
+    (
+        (
+            _C("used_tool", "info_flag", "tool_used"),
+            _C("exact_match", "exact"),
+            _C("cited_confidence", "info_ratio", "confidence"),
+            _C("word_count", "word_metric"),
+        ),
+        (0.2, 0.55, 0.25, 0.0),
+    ),
     # size 5
-    ((_C("exact_match", "exact"), _C("contains_answer", "contains"), _C("brevity", "len_under", 32), _C("cited_confidence", "info_ratio", "confidence"), _C("length_chars", "len_metric")), (0.4, 0.2, 0.15, 0.25, 0.0)),
-    ((_C("starts_capitalized", "starts_upper"), _C("used_tool", "info_flag", "tool_used"), _C("exact_match", "exact"), _C("brevity", "len_under", 24), _C("word_count", "word_metric")), (0.1, 0.3, 0.4, 0.2, 0.0)),
-    ((_C("contains_answer", "contains"), _C("cited_confidence", "info_ratio", "confidence"), _C("used_tool", "info_flag", "tool_used"), _C("starts_capitalized", "starts_upper"), _C("length_chars", "len_metric")), (0.35, 0.25, 0.25, 0.15, 0.0)),
-    ((_C("exact_match", "exact"), _C("cited_confidence", "info_ratio", "confidence"), _C("brevity", "len_under", 40), _C("used_tool", "info_flag", "tool_used"), _C("word_count", "word_metric")), (0.45, 0.2, 0.15, 0.2, 0.0)),
-    ((_C("brevity", "len_under", 64), _C("exact_match", "exact"), _C("contains_answer", "contains"), _C("cited_confidence", "info_ratio", "confidence"), _C("length_chars", "len_metric")), (0.15, 0.45, 0.2, 0.2, 0.0)),
-    ((_C("used_tool", "info_flag", "tool_used"), _C("starts_capitalized", "starts_upper"), _C("cited_confidence", "info_ratio", "confidence"), _C("exact_match", "exact"), _C("word_count", "word_metric")), (0.25, 0.1, 0.25, 0.4, 0.0)),
+    (
+        (
+            _C("exact_match", "exact"),
+            _C("contains_answer", "contains"),
+            _C("brevity", "len_under", 32),
+            _C("cited_confidence", "info_ratio", "confidence"),
+            _C("length_chars", "len_metric"),
+        ),
+        (0.4, 0.2, 0.15, 0.25, 0.0),
+    ),
+    (
+        (
+            _C("starts_capitalized", "starts_upper"),
+            _C("used_tool", "info_flag", "tool_used"),
+            _C("exact_match", "exact"),
+            _C("brevity", "len_under", 24),
+            _C("word_count", "word_metric"),
+        ),
+        (0.1, 0.3, 0.4, 0.2, 0.0),
+    ),
+    (
+        (
+            _C("contains_answer", "contains"),
+            _C("cited_confidence", "info_ratio", "confidence"),
+            _C("used_tool", "info_flag", "tool_used"),
+            _C("starts_capitalized", "starts_upper"),
+            _C("length_chars", "len_metric"),
+        ),
+        (0.35, 0.25, 0.25, 0.15, 0.0),
+    ),
+    (
+        (
+            _C("exact_match", "exact"),
+            _C("cited_confidence", "info_ratio", "confidence"),
+            _C("brevity", "len_under", 40),
+            _C("used_tool", "info_flag", "tool_used"),
+            _C("word_count", "word_metric"),
+        ),
+        (0.45, 0.2, 0.15, 0.2, 0.0),
+    ),
+    (
+        (
+            _C("brevity", "len_under", 64),
+            _C("exact_match", "exact"),
+            _C("contains_answer", "contains"),
+            _C("cited_confidence", "info_ratio", "confidence"),
+            _C("length_chars", "len_metric"),
+        ),
+        (0.15, 0.45, 0.2, 0.2, 0.0),
+    ),
+    (
+        (
+            _C("used_tool", "info_flag", "tool_used"),
+            _C("starts_capitalized", "starts_upper"),
+            _C("cited_confidence", "info_ratio", "confidence"),
+            _C("exact_match", "exact"),
+            _C("word_count", "word_metric"),
+        ),
+        (0.25, 0.1, 0.25, 0.4, 0.0),
+    ),
     # size 6
-    ((_C("exact_match", "exact"), _C("contains_answer", "contains"), _C("brevity", "len_under", 32), _C("starts_capitalized", "starts_upper"), _C("cited_confidence", "info_ratio", "confidence"), _C("length_chars", "len_metric")), (0.3, 0.2, 0.15, 0.1, 0.25, 0.0)),
-    ((_C("contains_answer", "contains"), _C("used_tool", "info_flag", "tool_used"), _C("cited_confidence", "info_ratio", "confidence"), _C("exact_match", "exact"), _C("brevity", "len_under", 24), _C("word_count", "word_metric")), (0.2, 0.15, 0.2, 0.3, 0.15, 0.0)),
-    ((_C("starts_capitalized", "starts_upper"), _C("brevity", "len_under", 48), _C("exact_match", "exact"), _C("cited_confidence", "info_ratio", "confidence"), _C("used_tool", "info_flag", "tool_used"), _C("length_chars", "len_metric")), (0.1, 0.2, 0.35, 0.2, 0.15, 0.0)),
-    ((_C("cited_confidence", "info_ratio", "confidence"), _C("exact_match", "exact"), _C("used_tool", "info_flag", "tool_used"), _C("contains_answer", "contains"), _C("starts_capitalized", "starts_upper"), _C("word_count", "word_metric")), (0.25, 0.3, 0.2, 0.15, 0.1, 0.0)),
-    ((_C("brevity", "len_under", 40), _C("contains_answer", "contains"), _C("cited_confidence", "info_ratio", "confidence"), _C("starts_capitalized", "starts_upper"), _C("exact_match", "exact"), _C("length_chars", "len_metric")), (0.15, 0.2, 0.2, 0.1, 0.35, 0.0)),
-    ((_C("used_tool", "info_flag", "tool_used"), _C("exact_match", "exact"), _C("brevity", "len_under", 64), _C("cited_confidence", "info_ratio", "confidence"), _C("contains_answer", "contains"), _C("word_count", "word_metric")), (0.2, 0.35, 0.1, 0.2, 0.15, 0.0)),
+    (
+        (
+            _C("exact_match", "exact"),
+            _C("contains_answer", "contains"),
+            _C("brevity", "len_under", 32),
+            _C("starts_capitalized", "starts_upper"),
+            _C("cited_confidence", "info_ratio", "confidence"),
+            _C("length_chars", "len_metric"),
+        ),
+        (0.3, 0.2, 0.15, 0.1, 0.25, 0.0),
+    ),
+    (
+        (
+            _C("contains_answer", "contains"),
+            _C("used_tool", "info_flag", "tool_used"),
+            _C("cited_confidence", "info_ratio", "confidence"),
+            _C("exact_match", "exact"),
+            _C("brevity", "len_under", 24),
+            _C("word_count", "word_metric"),
+        ),
+        (0.2, 0.15, 0.2, 0.3, 0.15, 0.0),
+    ),
+    (
+        (
+            _C("starts_capitalized", "starts_upper"),
+            _C("brevity", "len_under", 48),
+            _C("exact_match", "exact"),
+            _C("cited_confidence", "info_ratio", "confidence"),
+            _C("used_tool", "info_flag", "tool_used"),
+            _C("length_chars", "len_metric"),
+        ),
+        (0.1, 0.2, 0.35, 0.2, 0.15, 0.0),
+    ),
+    (
+        (
+            _C("cited_confidence", "info_ratio", "confidence"),
+            _C("exact_match", "exact"),
+            _C("used_tool", "info_flag", "tool_used"),
+            _C("contains_answer", "contains"),
+            _C("starts_capitalized", "starts_upper"),
+            _C("word_count", "word_metric"),
+        ),
+        (0.25, 0.3, 0.2, 0.15, 0.1, 0.0),
+    ),
+    (
+        (
+            _C("brevity", "len_under", 40),
+            _C("contains_answer", "contains"),
+            _C("cited_confidence", "info_ratio", "confidence"),
+            _C("starts_capitalized", "starts_upper"),
+            _C("exact_match", "exact"),
+            _C("length_chars", "len_metric"),
+        ),
+        (0.15, 0.2, 0.2, 0.1, 0.35, 0.0),
+    ),
+    (
+        (
+            _C("used_tool", "info_flag", "tool_used"),
+            _C("exact_match", "exact"),
+            _C("brevity", "len_under", 64),
+            _C("cited_confidence", "info_ratio", "confidence"),
+            _C("contains_answer", "contains"),
+            _C("word_count", "word_metric"),
+        ),
+        (0.2, 0.35, 0.1, 0.2, 0.15, 0.0),
+    ),
 )
 
 
@@ -135,6 +339,7 @@ def all_contracts() -> list[Contract]:
 
 
 # ---- reference module -------------------------------------------------------
+
 
 def reference_module_source(contract: Contract) -> str:
     """The module an ideal agent would emit for this contract."""

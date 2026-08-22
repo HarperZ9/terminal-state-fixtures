@@ -5,6 +5,7 @@ weights, rules) plus the frozen worked rows, so eval-time rendering never
 re-executes the reference. Full-precision expectations live in the frozen
 file; the worked rows are displayed rounded and say so.
 """
+
 from __future__ import annotations
 
 import json
@@ -12,8 +13,7 @@ import json
 _KIND_PROSE = {
     "exact": "1.0 when the completion equals the answer exactly, else 0.0.",
     "contains": (
-        "1.0 when the answer appears as a substring of the completion, "
-        "else 0.0."
+        "1.0 when the answer appears as a substring of the completion, else 0.0."
     ),
     "len_under": (
         "1.0 when len(completion) <= {param}, else 0.0. The boundary counts: "
@@ -39,9 +39,7 @@ _KIND_PROSE = {
 def _criterion_prose(name: str, kind: str, param: object) -> str:
     text = _KIND_PROSE[kind]
     if "{param" in text:
-        text = text.replace("{param!r}", repr(param)).replace(
-            "{param}", str(param)
-        )
+        text = text.replace("{param!r}", repr(param)).replace("{param}", str(param))
     return f"`{name}`: {text}"
 
 
@@ -61,10 +59,12 @@ DELIVERABLE_PROSE = (
 EMISSION_LINES = (
     "## Emission protocol",
     "",
-    "Reply with your complete module in a single ```python code fence. "
-    "Extraction takes everything between the LAST ```python opener and "
-    "the LAST ``` in your reply. The module must import nothing beyond "
-    "the Python standard library, `verifiers`, and `datasets`.",
+    (
+        "Reply with your complete module in a single ```python code fence. "
+        "Extraction takes everything between the LAST ```python opener and "
+        "the LAST ``` in your reply. The module must import nothing beyond "
+        "the Python standard library, `verifiers`, and `datasets`."
+    ),
 )
 
 
@@ -75,9 +75,7 @@ def contract_lines(contract: dict) -> list[str]:
     a = lines.append
     a("## Criteria, in order")
     a("")
-    for (name, kind, param), weight in zip(
-        contract["kinds"], contract["weights"]
-    ):
+    for (name, kind, param), weight in zip(contract["kinds"], contract["weights"]):
         a(f"- weight {weight!r} -- " + _criterion_prose(name, kind, param))
     a("")
     a("## Rules")

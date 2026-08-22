@@ -5,6 +5,7 @@ verbatim with the rubric-contract family), the broken module inline, the
 frozen symptom (observed vs expected on one visible row), and the three
 visible expected rows. Eval-time rendering never re-executes anything.
 """
+
 from __future__ import annotations
 
 import json

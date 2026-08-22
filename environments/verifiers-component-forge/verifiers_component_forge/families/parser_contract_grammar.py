@@ -11,6 +11,7 @@ Everything is a pure function of (variant, probe values); no randomness.
 Probe values are ASCII tokens derived from the variant id so no two variants
 share payload strings.
 """
+
 from __future__ import annotations
 
 from .parser_contract import Variant
@@ -73,9 +74,7 @@ def _text(recipe_value: str) -> dict:
 def _chat(*message_texts: str) -> dict:
     return {
         "kind": "chat",
-        "messages": [
-            {"role": "assistant", "content": t} for t in message_texts
-        ],
+        "messages": [{"role": "assistant", "content": t} for t in message_texts],
     }
 
 
@@ -88,7 +87,7 @@ def _attr(*message_texts: str) -> dict:
 def probes_for(variant: Variant) -> list[dict]:
     """The probe battery for one variant: ``[{"cell", "recipe"}, ...]``."""
     vid = variant.variant_id.replace("-", "")
-    val = lambda tag: f"v{tag}{vid[-8:]}"  # noqa: E731 -- tiny local factory
+    val = lambda tag: f"v{tag}{vid[-8:]}"
     r1 = variant.ladder[0]
     filler = "plain filler sentence."
     probes: list[dict] = []
@@ -111,17 +110,13 @@ def probes_for(variant: Variant) -> list[dict]:
         add(
             "contradict",
             _text(
-                f"{_hit(variant.ladder[1], val('lo'))}\n"
-                f"{_hit(r1, val('hi'))}\n{filler}"
+                f"{_hit(variant.ladder[1], val('lo'))}\n{_hit(r1, val('hi'))}\n{filler}"
             ),
         )
         # Same, with rung 2 appearing AFTER rung 1 in the text.
         add(
             "contradict-after",
-            _text(
-                f"{_hit(r1, val('hi2'))}\n"
-                f"{_hit(variant.ladder[1], val('lo2'))}"
-            ),
+            _text(f"{_hit(r1, val('hi2'))}\n{_hit(variant.ladder[1], val('lo2'))}"),
         )
 
     # Last-occurrence-wins within a single rung.
@@ -154,16 +149,13 @@ def probes_for(variant: Variant) -> list[dict]:
     )
     add(
         "think-then-hit",
-        _text(
-            f"<think>{_hit(r1, val('inner'))}</think>\n"
-            f"{_hit(r1, val('outer'))}"
-        ),
+        _text(f"<think>{_hit(r1, val('inner'))}</think>\n{_hit(r1, val('outer'))}"),
     )
 
     # Message scope: the hit lives in the EARLIER message only.
     add("scope-cross", _chat(f"{filler}\n{_hit(r1, val('sc'))}", filler))
     # And the regression twin: the hit in the LAST message.
-    add("scope-last", _chat(filler, _hit(r1, val('sl'))))
+    add("scope-last", _chat(filler, _hit(r1, val("sl"))))
 
     # Content parts.
     add(

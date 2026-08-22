@@ -8,6 +8,7 @@ floor, run END-TO-END through the child driver: a module wrapping the
 reference scores 1.0 on the frozen probes while the stock ``vf.XMLParser``
 falls measurably short on the trap cells it was never built to honor.
 """
+
 from __future__ import annotations
 
 import asyncio
@@ -17,16 +18,23 @@ from pathlib import Path
 
 sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
 
-from verifiers_component_forge.families import parser_contract as pc  # noqa: E402
-from verifiers_component_forge.families import parser_contract_grammar as pcg  # noqa: E402
-from verifiers_component_forge.harness import runner  # noqa: E402
+from verifiers_component_forge.families import parser_contract as pc
+from verifiers_component_forge.families import (
+    parser_contract_grammar as pcg,
+)
+from verifiers_component_forge.harness import runner
 
-DATA = Path(__file__).resolve().parents[1] / "verifiers_component_forge" / "data" / "parser_contract.json"
+DATA = (
+    Path(__file__).resolve().parents[1]
+    / "verifiers_component_forge"
+    / "data"
+    / "parser_contract.json"
+)
 
 
 # ---- hand-derived semantics (no grammar, no generator) ----------------------
 
-V = pc.Variant  # noqa: N806
+V = pc.Variant
 
 
 def test_tag_last_pair_wins_and_strips():
@@ -62,7 +70,9 @@ def test_scope_last_vs_joined_on_cross_message_hit():
         {"role": "assistant", "content": "no tags here"},
     ]
     assert pc.reference_parse(V(("tag:answer",), "last", False, False), chat) is None
-    assert pc.reference_parse(V(("tag:answer",), "joined", False, False), chat) == "early"
+    assert (
+        pc.reference_parse(V(("tag:answer",), "joined", False, False), chat) == "early"
+    )
 
 
 def test_precedence_beats_document_order():
@@ -104,7 +114,9 @@ def test_prefix_takes_last_marker_line_then_applies_empty_rule():
     v = V(("prefix:ANSWER:",), "last", False, True)
     text = "ANSWER: one\nnoise\n  ANSWER: two  \nANSWER:\n"
     assert pc.reference_parse(v, text) == ""  # last marker line is bare, empty hits
-    assert pc.reference_parse(V(("prefix:ANSWER:",), "last", False, False), text) is None
+    assert (
+        pc.reference_parse(V(("prefix:ANSWER:",), "last", False, False), text) is None
+    )
 
 
 def test_whitespace_only_scope_misses_everything():
@@ -113,6 +125,7 @@ def test_whitespace_only_scope_misses_everything():
 
 
 # ---- frozen-file invariants -------------------------------------------------
+
 
 def _frozen() -> dict:
     return json.loads(DATA.read_text(encoding="utf-8"))
@@ -132,9 +145,7 @@ def test_every_variant_weights_sum_to_one_with_edge_credit():
     for vid, entry in data.items():
         weights = [p["weight"] for p in entry["probes"]]
         assert abs(sum(weights) - 1.0) < 1e-9, vid
-        edge = sum(
-            p["weight"] for p in entry["probes"] if p["cell"] in pcg.EDGE_CELLS
-        )
+        edge = sum(p["weight"] for p in entry["probes"] if p["cell"] in pcg.EDGE_CELLS)
         assert abs(edge - pcg.EDGE_CREDIT) < 1e-9, (vid, edge)
         # Depth-1 prefix ladders bottom out at 13 probes (no unclosed
         # form, no split-tag cell); everything else carries more.

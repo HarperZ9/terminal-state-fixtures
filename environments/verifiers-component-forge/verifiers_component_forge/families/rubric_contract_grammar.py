@@ -11,6 +11,7 @@ Expectations are never written here: the generator executes the contract's
 reference module through the real verifiers machinery over these fixtures and
 freezes what comes back.
 """
+
 from __future__ import annotations
 
 from .rubric_contract import Contract
@@ -33,8 +34,12 @@ def fixtures_for(contract: Contract) -> list[dict]:
     kinds = {c.kind: c for c in contract.criteria}
     rows: list[dict] = []
 
-    def add(cell: str, completion: str, info_overrides: dict | None = None,
-            drop_keys: tuple[str, ...] = ()) -> None:
+    def add(
+        cell: str,
+        completion: str,
+        info_overrides: dict | None = None,
+        drop_keys: tuple[str, ...] = (),
+    ) -> None:
         info = dict(_baseline_info(contract))
         for k in drop_keys:
             info.pop(k, None)
@@ -65,18 +70,21 @@ def fixtures_for(contract: Contract) -> list[dict]:
     if "starts_upper" in kinds:
         add("upper-hit", "Answer shaped but wrong")
     if "len_under" in kinds:
-        n = int(kinds["len_under"].param)  # type: ignore[arg-type]
-        at = ("x" * n)  # exactly N chars: boundary HIT
+        n = kinds["len_under"].param
+        assert isinstance(n, int)
+        at = "x" * n  # exactly N chars: boundary HIT
         over = "x" * (n + 1)  # one over: MISS
         add("len-at-boundary", at)
         add("len-one-over", over)
     if "info_ratio" in kinds:
         key = kinds["info_ratio"].param
+        assert isinstance(key, str)
         add("ratio-clamped", strong, {key: 1.7})
         add("ratio-malformed", strong, {key: "high"})
         add("ratio-missing", strong, drop_keys=(key,))
     if "info_flag" in kinds:
         key = kinds["info_flag"].param
+        assert isinstance(key, str)
         add("flag-false", strong, {key: 0})
         add("flag-truthy-string", strong, {key: "yes"})
         add("flag-missing", strong, drop_keys=(key,))
@@ -84,7 +92,12 @@ def fixtures_for(contract: Contract) -> list[dict]:
     # Negative-weight firing row: the second criterion is the one negated.
     # A row where it scores 1.0 makes the reward DROP under negative
     # contracts; the generator freezes whichever value the reference yields.
-    add("second-criterion-fires", f"around {answer} padding" if contract.criteria[1].kind == "contains" else strong)
+    add(
+        "second-criterion-fires",
+        f"around {answer} padding"
+        if contract.criteria[1].kind == "contains"
+        else strong,
+    )
 
     # Diagnostic-only pair: identical weighted behavior, different lengths.
     add("diag-pair-short", "zz")

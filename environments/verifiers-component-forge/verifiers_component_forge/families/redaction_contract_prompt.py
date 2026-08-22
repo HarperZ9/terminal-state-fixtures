@@ -1,4 +1,5 @@
 """Prompt renderer for the redaction-contract family."""
+
 from __future__ import annotations
 
 import json
@@ -47,10 +48,7 @@ def render_prompt(variant: RedactionVariant) -> str:
         "labels, sha256 digests, bytes, booleans, numbers, nulls, and "
         "`{'secret_ref': NAME}` objects."
     )
-    a(
-        "5. Return a dict with `redaction_policy` set to "
-        "`redaction-contract/1`."
-    )
+    a("5. Return a dict with `redaction_policy` set to `redaction-contract/1`.")
     a("6. Do not remove rows, reorder lists, hash secret values, or invent new keys.")
     a("")
     a("## Worked examples (illustrative only; never scored)")

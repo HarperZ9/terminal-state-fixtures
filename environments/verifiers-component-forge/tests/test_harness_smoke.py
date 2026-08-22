@@ -6,6 +6,7 @@ stdin/stdout protocol carries a correct module to a perfect score and a broken
 module to zero without the parent crashing; (3) a hanging module is killed by
 the wall clock and reported as a probe failure, not a harness error.
 """
+
 from __future__ import annotations
 
 import asyncio
@@ -16,9 +17,9 @@ from pathlib import Path
 
 sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
 
-from verifiers_component_forge.harness import runner  # noqa: E402
+from verifiers_component_forge.harness import runner
 
-CORRECT_MODULE = '''
+CORRECT_MODULE = """
 class P:
     def parse_answer(self, completion):
         if isinstance(completion, str):
@@ -34,14 +35,14 @@ class P:
 
 def build_parser():
     return P()
-'''
+"""
 
-BROKEN_MODULE = '''
+BROKEN_MODULE = """
 def build_parser():
     raise RuntimeError("boom")
-'''
+"""
 
-HANGING_MODULE = '''
+HANGING_MODULE = """
 class P:
     def parse_answer(self, completion):
         while True:
@@ -49,7 +50,7 @@ class P:
 
 def build_parser():
     return P()
-'''
+"""
 
 INPUTS = [
     {"kind": "text", "value": "ANSWER: 42"},
@@ -57,7 +58,13 @@ INPUTS = [
     {
         "kind": "chat",
         "messages": [
-            {"role": "assistant", "content": [{"type": "text", "text": "ANSWER:"}, {"type": "text", "text": "parts"}]}
+            {
+                "role": "assistant",
+                "content": [
+                    {"type": "text", "text": "ANSWER:"},
+                    {"type": "text", "text": "parts"},
+                ],
+            }
         ],
     },
     {"kind": "attr", "messages": [{"role": "assistant", "content": "no marker here"}]},
@@ -69,14 +76,17 @@ def test_child_under_production_flags_imports_verifiers():
     """The exact production invocation (-I + injected paths) must reach
     verifiers; -I alone cannot, which is why the bootstrap exists."""
     paths = runner._verifiers_sys_paths()
-    code = "import sys\n" + "".join(f"sys.path.append({p!r})\n" for p in paths) + (
-        "import verifiers\nprint(verifiers.__name__)"
+    code = (
+        "import sys\n"
+        + "".join(f"sys.path.append({p!r})\n" for p in paths)
+        + ("import verifiers\nprint(verifiers.__name__)")
     )
     out = subprocess.run(
         [sys.executable, "-I", "-c", code],
         capture_output=True,
         text=True,
         timeout=60,
+        check=False,  # the exit code is asserted below, not raised
         env=runner._scrubbed_env(),
     )
     assert out.returncode == 0, out.stderr[-500:]

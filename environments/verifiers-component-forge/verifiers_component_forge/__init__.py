@@ -7,6 +7,7 @@ frozen probes and compares terminal state against reference-derived
 expectations. No judge model, no network, and the oracle never enters the
 child process. See DESIGN.md for the family designs and the freeze pipeline.
 """
+
 from __future__ import annotations
 
 import json
@@ -15,67 +16,14 @@ from pathlib import Path
 import verifiers as vf
 from datasets import Dataset
 
+from . import scoring
 from .families.parser_contract import Variant, scope_text
-from .harness import runner
 
 _DATA_DIR = Path(__file__).resolve().parent / "data"
 
 
 def _load_frozen(name: str) -> dict:
     return json.loads((_DATA_DIR / name).read_text(encoding="utf-8"))
-
-
-def _declared_raw_secret_values(record: dict) -> list[str]:
-    rows = record.get("secrets") or []
-    values = []
-    for item in rows:
-        if not isinstance(item, dict):
-            continue
-        raw = item.get("value")
-        if isinstance(raw, str) and raw:
-            values.append(raw)
-    return values
-
-
-def _contains_any_raw_secret(value: object, raw_values: list[str]) -> bool:
-    if isinstance(value, str):
-        return any(raw in value for raw in raw_values)
-    if isinstance(value, list):
-        return any(_contains_any_raw_secret(item, raw_values) for item in value)
-    if isinstance(value, dict):
-        return any(_contains_any_raw_secret(item, raw_values) for item in value.values())
-    return False
-
-
-def _redaction_gate(results: object, entry: dict) -> dict[str, bool]:
-    fixtures = entry["fixtures"]
-    expectations = [p["expect"] for p in fixtures]
-    if not isinstance(results, list) or len(results) != len(fixtures):
-        return {
-            "result_shape": False,
-            "no_raw_secret_leaks": False,
-            "all_exact": False,
-        }
-
-    result_shape = all(
-        isinstance(result, dict) and "error" not in result for result in results
-    )
-    no_raw_secret_leaks = all(
-        not _contains_any_raw_secret(
-            result, _declared_raw_secret_values(fixture["record"])
-        )
-        for result, fixture in zip(results, fixtures)
-    )
-    try:
-        all_exact = runner.match_fraction(results, expectations) == 1.0
-    except (TypeError, ValueError):
-        all_exact = False
-
-    return {
-        "result_shape": result_shape,
-        "no_raw_secret_leaks": no_raw_secret_leaks,
-        "all_exact": all_exact,
-    }
 
 
 class LastPythonFenceParser(vf.Parser):
@@ -102,16 +50,27 @@ class LastPythonFenceParser(vf.Parser):
 
 
 def load_environment(**kwargs) -> vf.Environment:
-    frozen_parser = _load_frozen("parser_contract.json")
-    frozen_rubric = _load_frozen("rubric_contract.json")
-    frozen_repair = _load_frozen("rubric_repair.json")
-    frozen_redaction = _load_frozen("redaction_contract.json")
+    frozen = {
+        "parser-contract": _load_frozen("parser_contract.json"),
+        "rubric-contract": _load_frozen("rubric_contract.json"),
+        "rubric-repair": _load_frozen("rubric_repair.json"),
+        "referee-protocol": _load_frozen("referee_protocol.json"),
+        "redaction-contract": _load_frozen("redaction_contract.json"),
+    }
+    frozen_parser = frozen["parser-contract"]
+    frozen_rubric = frozen["rubric-contract"]
+    frozen_repair = frozen["rubric-repair"]
+    frozen_referee = frozen["referee-protocol"]
+    frozen_redaction = frozen["redaction-contract"]
     parser = LastPythonFenceParser()
 
     rows = []
     from .families.parser_contract_prompt import render_prompt
     from .families.redaction_contract import RedactionVariant
-    from .families.redaction_contract_prompt import render_prompt as render_redaction_prompt
+    from .families.redaction_contract_prompt import (
+        render_prompt as render_redaction_prompt,
+    )
+    from .families.referee_protocol_prompt import render_prompt as render_referee_prompt
     from .families.rubric_contract_prompt import render_prompt as render_rubric_prompt
     from .families.rubric_repair_prompt import render_prompt as render_repair_prompt
 
@@ -146,6 +105,15 @@ def load_environment(**kwargs) -> vf.Environment:
                 "info": {"family": "rubric-repair", "variant_id": variant_id},
             }
         )
+    for variant_id in sorted(frozen_referee):
+        entry = frozen_referee[variant_id]
+        rows.append(
+            {
+                "question": render_referee_prompt(entry),
+                "answer": variant_id,
+                "info": {"family": "referee-protocol", "variant_id": variant_id},
+            }
+        )
     for variant_id in sorted(frozen_redaction):
         entry = frozen_redaction[variant_id]
         variant = RedactionVariant(
@@ -161,87 +129,15 @@ def load_environment(**kwargs) -> vf.Environment:
             }
         )
 
-    async def _run_parser_family(module_source: str, entry: dict) -> tuple[dict, float]:
-        result = await runner.run_child(
-            "child_driver_parser.py",
-            module_source,
-            [p["recipe"] for p in entry["probes"]],
-            wall_clock=60.0,
-        )
-        if not result.ok:
-            return {"skipped": result.failure or "child-failure"}, 0.0
-        score = runner.match_fraction(
-            result.payload["results"],
-            [p["expect"] for p in entry["probes"]],
-            [p["weight"] for p in entry["probes"]],
-        )
-        return {"results": result.payload["results"]}, score
-
-    async def _run_rubric_family(module_source: str, entry: dict) -> tuple[dict, float]:
-        contract = entry["contract"]
-        result = await runner.run_child(
-            "child_driver_rubric.py",
-            module_source,
-            {
-                "contract": {
-                    "names": contract["names"],
-                    "weights": contract["weights"],
-                },
-                "fixtures": [p["fixture"] for p in entry["fixtures"]],
-            },
-            wall_clock=90.0,
-        )
-        if not result.ok:
-            return {"skipped": result.failure or "child-failure"}, 0.0
-        gate = result.payload["gate"]
-        outcome = {"results": result.payload["results"], "gate": gate}
-        if not all(gate.values()):
-            return outcome, 0.0
-        # rubric-contract fixtures are uniform; rubric-repair fixtures carry
-        # frozen kill-set/regression weights.
-        score = runner.match_fraction(
-            result.payload["results"],
-            [p["expect"] for p in entry["fixtures"]],
-            [p.get("weight", 1.0) for p in entry["fixtures"]],
-        )
-        return outcome, score
-
-    async def _run_redaction_family(module_source: str, entry: dict) -> tuple[dict, float]:
-        result = await runner.run_child(
-            "child_driver_redaction.py",
-            module_source,
-            [p["record"] for p in entry["fixtures"]],
-            wall_clock=60.0,
-        )
-        if not result.ok:
-            return {"skipped": result.failure or "child-failure"}, 0.0
-        results = result.payload.get("results") if result.payload else None
-        gate = _redaction_gate(results, entry)
-        outcome = {"results": results if isinstance(results, list) else [], "gate": gate}
-        return outcome, 1.0 if all(gate.values()) else 0.0
-
     async def terminal_state_match(completion, info, state, **_kwargs) -> float:
         module_source = parser.parse_answer(completion)
         if module_source is None:
             state["forge_outcome"] = {"skipped": "no-code"}
             return 0.0
-        if info["family"] == "parser-contract":
-            outcome, score = await _run_parser_family(
-                module_source, frozen_parser[info["variant_id"]]
-            )
-        elif info["family"] in ("rubric-contract", "rubric-repair"):
-            frozen = (
-                frozen_rubric
-                if info["family"] == "rubric-contract"
-                else frozen_repair
-            )
-            outcome, score = await _run_rubric_family(
-                module_source, frozen[info["variant_id"]]
-            )
-        else:
-            outcome, score = await _run_redaction_family(
-                module_source, frozen_redaction[info["variant_id"]]
-            )
+        run_family = scoring.FAMILY_RUNNERS[info["family"]]
+        outcome, score = await run_family(
+            module_source, frozen[info["family"]][info["variant_id"]]
+        )
         state["forge_outcome"] = outcome  # shared with the 0-weight metrics
         return score
 

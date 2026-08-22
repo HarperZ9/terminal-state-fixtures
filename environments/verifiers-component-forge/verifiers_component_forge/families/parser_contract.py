@@ -31,6 +31,7 @@ Normative semantics, stated once and implemented once:
   MISSES and the ladder falls through.
 - All rungs miss: the answer is ``None``.
 """
+
 from __future__ import annotations
 
 import re
@@ -109,7 +110,7 @@ def _message_content(message: object) -> str:
 def scope_text(completion: object, scope: str) -> str:
     if isinstance(completion, str):
         return completion
-    messages = list(completion)
+    messages = list(completion) if isinstance(completion, (list, tuple)) else []
     if not messages:
         return ""
     if scope == "last":
@@ -159,7 +160,7 @@ def _rung_prefix(text: str, marker: str) -> tuple[bool, str]:
     hit = None
     for line in text.splitlines():
         if line.lstrip().startswith(marker):
-            hit = line.lstrip()[len(marker):]
+            hit = line.lstrip()[len(marker) :]
     if hit is None:
         return False, ""
     return True, hit.strip()

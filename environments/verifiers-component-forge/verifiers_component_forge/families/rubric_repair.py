@@ -19,11 +19,12 @@ carry the rest as a regression share, so the verbatim broken module scores at
 most the regression share and an over-eager rewrite that breaks untouched
 semantics loses regression credit.
 """
+
 from __future__ import annotations
 
 from dataclasses import dataclass
 
-from .rubric_contract import _EXCL_GUARD, Contract, all_contracts
+from .rubric_contract import _EXCL_GUARD, Contract, Criterion, all_contracts
 
 KILL_SHARE = 0.85
 REGRESSION_SHARE = 0.15
@@ -51,7 +52,8 @@ def seed_contracts() -> tuple[Contract, ...]:
 
 # ---- operators --------------------------------------------------------------
 
-def _kinds(contract: Contract) -> dict[str, object]:
+
+def _kinds(contract: Contract) -> dict[str, Criterion]:
     return {c.kind: c for c in contract.criteria}
 
 
@@ -117,8 +119,11 @@ def _mut_exclusion_on_diagnostic(source: str, c: Contract) -> str:
     diag = c.criteria[-1].name
     head = f"def {diag}(completion, answer, info, **kwargs):\n    return "
     return _replace_once(
-        source, head,
-        f"def {diag}(completion, answer, info, **kwargs):\n    " + _EXCL_GUARD + "return ",
+        source,
+        head,
+        f"def {diag}(completion, answer, info, **kwargs):\n    "
+        + _EXCL_GUARD
+        + "return ",
     )
 
 
@@ -144,10 +149,7 @@ def _mut_guard_dropped(source: str, c: Contract) -> str:
         "        return 0.0\n"
         "    return min(max(value, 0.0), 1.0)"
     )
-    new = (
-        f"    value = float(info[{key!r}])\n"
-        "    return min(max(value, 0.0), 1.0)"
-    )
+    new = f"    value = float(info[{key!r}])\n    return min(max(value, 0.0), 1.0)"
     return _replace_once(source, old, new)
 
 

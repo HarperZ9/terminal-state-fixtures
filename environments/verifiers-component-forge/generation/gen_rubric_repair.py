@@ -11,6 +11,7 @@ the kill set; and assert the frozen no-op ceiling (the verbatim broken module
 scores 0.0 when it breaks the structural gate, at most the regression share
 otherwise) before anything is written.
 """
+
 from __future__ import annotations
 
 import asyncio
@@ -22,10 +23,12 @@ ROOT = Path(__file__).resolve().parents[1]
 if str(ROOT) not in sys.path:
     sys.path.insert(0, str(ROOT))
 
-from verifiers_component_forge.families import rubric_contract as rc  # noqa: E402
-from verifiers_component_forge.families import rubric_repair as rr  # noqa: E402
-from verifiers_component_forge.families import rubric_repair_grammar as rrg  # noqa: E402
-from verifiers_component_forge.harness import runner  # noqa: E402
+from verifiers_component_forge.families import rubric_contract as rc
+from verifiers_component_forge.families import rubric_repair as rr
+from verifiers_component_forge.families import (
+    rubric_repair_grammar as rrg,
+)
+from verifiers_component_forge.harness import runner
 
 NOOP_CEILING = 0.2
 
@@ -35,7 +38,7 @@ def _load_rubric(source: str, tag: str):
 
     module = types.ModuleType(tag)
     sys.modules[tag] = module
-    exec(compile(source, f"<{tag}>", "exec"), module.__dict__)
+    exec(compile(source, f"<{tag}>", "exec"), module.__dict__)  # noqa: S102 -- executing our own reference source is the design
     env = module.load_environment()
     rubric = env.rubric
     if isinstance(rubric, vf.RubricGroup):
@@ -134,11 +137,9 @@ def build_rubric_repair() -> dict:
         else:
             noop = 0.0
         if noop >= NOOP_CEILING:
-            raise AssertionError(
-                f"{mutant.instance_id}: verbatim broken scores {noop}"
-            )
+            raise AssertionError(f"{mutant.instance_id}: verbatim broken scores {noop}")
 
-        def row(i: int) -> dict:
+        def row(i: int, battery=battery, expect=expect) -> dict:
             return {
                 "cell": battery[i]["cell"],
                 "fixture": {

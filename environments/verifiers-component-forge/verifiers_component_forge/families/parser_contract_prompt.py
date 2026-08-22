@@ -5,6 +5,7 @@ implements, rendered from the same Variant object, plus two worked examples
 (excluded from scoring) and the emission protocol. Hidden probes are unseen
 INSTANCES of these rules, never unseen requirements.
 """
+
 from __future__ import annotations
 
 from .parser_contract import Variant, reference_parse

@@ -6,6 +6,7 @@ mistake the rubric-contract family exists to catch) passes the name gate but
 fails the weight gate AND diverges on fixtures; a module that swaps in its own
 scoring loop trips the score_rollout identity gate.
 """
+
 from __future__ import annotations
 
 import asyncio
@@ -14,11 +15,14 @@ from pathlib import Path
 
 sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
 
-from verifiers_component_forge.harness import runner  # noqa: E402
+from verifiers_component_forge.harness import runner
 
-CONTRACT = {"names": ["exactness", "brevity", "length_chars"], "weights": [0.7, 0.3, 0.0]}
+CONTRACT = {
+    "names": ["exactness", "brevity", "length_chars"],
+    "weights": [0.7, 0.3, 0.0],
+}
 
-FAITHFUL_MODULE = '''
+FAITHFUL_MODULE = """
 import verifiers as vf
 from datasets import Dataset
 
@@ -35,7 +39,7 @@ def load_environment(**kwargs):
     rubric = vf.Rubric(funcs=[exactness, brevity, length_chars], weights=[0.7, 0.3, 0.0])
     dataset = Dataset.from_list([{"question": "q", "answer": "a"}])
     return vf.SingleTurnEnv(dataset=dataset, rubric=rubric, **kwargs)
-'''
+"""
 
 # The classic mistake: normalizing weights so they sum to 1 across ALL funcs,
 # dragging the 0-weight informational metric into the denominator.
@@ -43,7 +47,7 @@ NORMALIZING_MODULE = FAITHFUL_MODULE.replace(
     "weights=[0.7, 0.3, 0.0]", "weights=[0.7 / 1.0, 0.3 / 1.0, 0.1]"
 )
 
-BESPOKE_LOOP_MODULE = '''
+BESPOKE_LOOP_MODULE = """
 import verifiers as vf
 from datasets import Dataset
 
@@ -64,7 +68,7 @@ def load_environment(**kwargs):
     rubric = MyRubric(funcs=[exactness, brevity, length_chars], weights=[0.7, 0.3, 0.0])
     dataset = Dataset.from_list([{"question": "q", "answer": "a"}])
     return vf.SingleTurnEnv(dataset=dataset, rubric=rubric, **kwargs)
-'''
+"""
 
 FIXTURES = [
     {"prompt": "q", "completion": "a", "answer": "a", "info": {}},
@@ -76,7 +80,10 @@ FIXTURES = [
 # contract: reward = 0.7*exactness + 0.3*brevity + 0.0*length.
 EXPECTED = [
     {"reward": 1.0, "metrics": {"exactness": 1.0, "brevity": 1.0, "length_chars": 1.0}},
-    {"reward": 0.0, "metrics": {"exactness": 0.0, "brevity": 0.0, "length_chars": 22.0}},
+    {
+        "reward": 0.0,
+        "metrics": {"exactness": 0.0, "brevity": 0.0, "length_chars": 22.0},
+    },
     {"reward": 0.3, "metrics": {"exactness": 0.0, "brevity": 1.0, "length_chars": 5.0}},
 ]
 

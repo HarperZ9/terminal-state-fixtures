@@ -4,6 +4,7 @@ The family is deliberately small and synthetic: raw values are fake markers,
 but the contract is the real one a public-safe provenance fixture needs to
 test. The scorer rewards terminal JSON state, not claims about redaction.
 """
+
 from __future__ import annotations
 
 import asyncio
@@ -15,8 +16,8 @@ import pytest
 
 sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
 
-from verifiers_component_forge.families import redaction_contract as rc  # noqa: E402
-from verifiers_component_forge.harness import runner  # noqa: E402
+from verifiers_component_forge.families import redaction_contract as rc
+from verifiers_component_forge.harness import runner
 
 DATA = (
     Path(__file__).resolve().parents[1]
@@ -54,7 +55,9 @@ def test_reference_redacts_raw_secret_values_and_preserves_metadata():
     assert redacted["redaction_policy"] == rc.POLICY
     assert redacted["config"]["endpoint"] == "https://example.invalid/eval"
     assert redacted["config"]["headers"]["X-Trace"] == "trace-public-001"
-    assert redacted["config"]["headers"]["Authorization"] == "Bearer <redacted:AUTH_TOKEN>"
+    assert (
+        redacted["config"]["headers"]["Authorization"] == "Bearer <redacted:AUTH_TOKEN>"
+    )
     assert redacted["secrets"][0]["value"] == "<redacted:AUTH_TOKEN>"
     assert "FAKE_SECRET_DO_NOT_USE_LOOP29_AUTH" not in json.dumps(redacted)
 
@@ -118,7 +121,11 @@ def _declared_raw_secret_values(record: dict) -> list[str]:
     rows = record.get("secrets") or []
     values = []
     for item in rows:
-        if isinstance(item, dict) and isinstance(item.get("value"), str) and item["value"]:
+        if (
+            isinstance(item, dict)
+            and isinstance(item.get("value"), str)
+            and item["value"]
+        ):
             values.append(item["value"])
     return values
 
@@ -131,7 +138,9 @@ def test_worked_examples_are_canonically_disjoint_from_scored_pairs():
             )
             for row in rc.fixtures_for(variant)
         }
-        worked_pairs = {_canonical_record_expect_pair(row) for row in rc.worked_for(variant)}
+        worked_pairs = {
+            _canonical_record_expect_pair(row) for row in rc.worked_for(variant)
+        }
 
         assert worked_pairs
         assert worked_pairs.isdisjoint(scored_pairs)
@@ -147,9 +156,7 @@ def test_generator_safety_check_derives_declared_raw_secret_values():
                 {
                     "cell": "raw-value-without-standard-prefix",
                     "record": {
-                        "secrets": [
-                            {"name": "TOKEN", "value": "declared-raw-token"}
-                        ],
+                        "secrets": [{"name": "TOKEN", "value": "declared-raw-token"}],
                     },
                     "expect": {"stdout": "declared-raw-token"},
                 }

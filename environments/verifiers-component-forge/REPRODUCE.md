@@ -26,6 +26,18 @@ The generator builds each frozen JSON file twice in one process and refuses to
 write if either build differs. Test coverage then compares the committed files
 against fresh regeneration.
 
+## Lint and types
+
+```bash
+uvx ruff check verifiers_component_forge generation tests
+uvx ruff format --check verifiers_component_forge generation tests
+uvx ty check --python <venv-with-verifiers> verifiers_component_forge generation
+```
+
+All three pass clean. `ty` needs `--python` pointed at an environment with
+verifiers installed; without it the verifiers imports are unresolvable and
+report as diagnostics.
+
 ## Rubric-repair kill-check
 
 The `rubric-repair` family ships only mutants that flip at least two battery
@@ -40,6 +52,21 @@ sample through the real child driver.
 
 ```bash
 uv run --python 3.13 --prerelease=allow --with pytest python -m pytest tests/test_rubric_repair.py -q
+```
+
+## Referee-protocol fold cross-check
+
+The `referee-protocol` family freezes what the real `MultiTurnEnv.rollout`
+produces from each reference referee under canned player scripts. An
+independent pure fold of the same state machine (no verifiers dependency)
+recomputes every frozen row; the generator aborts on any disagreement and
+the test suite sweeps all 512 scripts again. Discrimination is pinned
+through the real child driver: the reference scores 1.0, overriding
+`rollout` (even delegating to `super()`) zeroes on the identity gate, and a
+wrong reward schedule earns exactly the transcript-only partial credit.
+
+```bash
+uv run --python 3.13 --prerelease=allow --with pytest python -m pytest tests/test_referee_protocol.py -q
 ```
 
 ## Redaction-contract public-safety check
