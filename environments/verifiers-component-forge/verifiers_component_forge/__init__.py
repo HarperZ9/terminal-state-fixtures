@@ -51,10 +51,13 @@ class LastPythonFenceParser(vf.Parser):
 def load_environment(**kwargs) -> vf.Environment:
     frozen_parser = _load_frozen("parser_contract.json")
     frozen_rubric = _load_frozen("rubric_contract.json")
+    frozen_redaction = _load_frozen("redaction_contract.json")
     parser = LastPythonFenceParser()
 
     rows = []
     from .families.parser_contract_prompt import render_prompt
+    from .families.redaction_contract import RedactionVariant
+    from .families.redaction_contract_prompt import render_prompt as render_redaction_prompt
     from .families.rubric_contract_prompt import render_prompt as render_rubric_prompt
 
     for variant_id in sorted(frozen_parser):
@@ -77,6 +80,20 @@ def load_environment(**kwargs) -> vf.Environment:
                 "question": render_rubric_prompt(entry["contract"], entry["worked"]),
                 "answer": variant_id,
                 "info": {"family": "rubric-contract", "variant_id": variant_id},
+            }
+        )
+    for variant_id in sorted(frozen_redaction):
+        entry = frozen_redaction[variant_id]
+        variant = RedactionVariant(
+            variant_id,
+            entry["variant"]["title"],
+            entry["variant"]["purpose"],
+        )
+        rows.append(
+            {
+                "question": render_redaction_prompt(variant),
+                "answer": variant_id,
+                "info": {"family": "redaction-contract", "variant_id": variant_id},
             }
         )
 
@@ -122,6 +139,21 @@ def load_environment(**kwargs) -> vf.Environment:
         )
         return outcome, score
 
+    async def _run_redaction_family(module_source: str, entry: dict) -> tuple[dict, float]:
+        result = await runner.run_child(
+            "child_driver_redaction.py",
+            module_source,
+            [p["record"] for p in entry["fixtures"]],
+            wall_clock=60.0,
+        )
+        if not result.ok:
+            return {"skipped": result.failure or "child-failure"}, 0.0
+        score = runner.match_fraction(
+            result.payload["results"],
+            [p["expect"] for p in entry["fixtures"]],
+        )
+        return {"results": result.payload["results"]}, score
+
     async def terminal_state_match(completion, info, state, **_kwargs) -> float:
         module_source = parser.parse_answer(completion)
         if module_source is None:
@@ -131,9 +163,13 @@ def load_environment(**kwargs) -> vf.Environment:
             outcome, score = await _run_parser_family(
                 module_source, frozen_parser[info["variant_id"]]
             )
-        else:
+        elif info["family"] == "rubric-contract":
             outcome, score = await _run_rubric_family(
                 module_source, frozen_rubric[info["variant_id"]]
+            )
+        else:
+            outcome, score = await _run_redaction_family(
+                module_source, frozen_redaction[info["variant_id"]]
             )
         state["forge_outcome"] = outcome  # shared with the 0-weight metrics
         return score

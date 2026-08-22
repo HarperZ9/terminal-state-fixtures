@@ -21,6 +21,7 @@ sys.path.insert(0, str(ROOT))
 
 from verifiers_component_forge.families import parser_contract as pc  # noqa: E402
 from verifiers_component_forge.families import parser_contract_grammar as pcg  # noqa: E402
+from verifiers_component_forge.families import redaction_contract as red  # noqa: E402
 from verifiers_component_forge.families import rubric_contract as rc  # noqa: E402
 from verifiers_component_forge.families import rubric_contract_grammar as rcg  # noqa: E402
 from verifiers_component_forge.harness.child_driver_parser import (  # noqa: E402
@@ -140,6 +141,29 @@ def build_rubric_contract() -> dict:
     return out
 
 
+def build_redaction_contract() -> dict:
+    out: dict[str, dict] = {}
+    for variant in red.all_variants():
+        rows = []
+        for fixture in red.fixtures_for(variant):
+            rows.append(
+                {
+                    "cell": fixture["cell"],
+                    "record": fixture["record"],
+                    "expect": red.reference_redact(fixture["record"]),
+                }
+            )
+        out[variant.variant_id] = {
+            "variant": {
+                "title": variant.title,
+                "purpose": variant.purpose,
+            },
+            "worked": red.worked_for(variant),
+            "fixtures": rows,
+        }
+    return out
+
+
 def _dumps(data: dict) -> str:
     return json.dumps(data, indent=1, sort_keys=True, ensure_ascii=True) + "\n"
 
@@ -178,6 +202,27 @@ def main() -> int:
         f"rubric_contract.json: {len(data)} contracts, {n_fx} fixtures, "
         f"{len(rewards)} distinct rewards "
         f"(min {rewards[0]}, max {rewards[-1]}), {len(first)} bytes"
+    )
+
+    first = _dumps(build_redaction_contract())
+    second = _dumps(build_redaction_contract())
+    if first != second:
+        print("FATAL: redaction_contract generator is not deterministic", file=sys.stderr)
+        return 1
+    (DATA_DIR / "redaction_contract.json").write_text(
+        first, encoding="utf-8", newline="\n"
+    )
+    data = json.loads(first)
+    n_fx = sum(len(v["fixtures"]) for v in data.values())
+    n_raw_expected = sum(
+        1
+        for v in data.values()
+        for row in v["fixtures"] + v["worked"]
+        if red.SECRET_PREFIX in json.dumps(row["expect"], sort_keys=True)
+    )
+    print(
+        f"redaction_contract.json: {len(data)} variants, {n_fx} fixtures, "
+        f"{n_raw_expected} raw markers in expected outputs, {len(first)} bytes"
     )
     return 0
 

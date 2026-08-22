@@ -68,7 +68,7 @@ async def _score(env, row, reply_text: str) -> State:
 def test_reference_reply_scores_one_through_the_real_environment():
     env = forge.load_environment()
     dataset = env.get_dataset()
-    assert len(dataset) == 192  # 96 parser-contract + 96 rubric-contract
+    assert len(dataset) == 196  # 96 parser + 96 rubric + 4 redaction
     row = dataset[0]
     assert row["info"]["family"] == "parser-contract"
     frozen = forge._load_frozen("parser_contract.json")
@@ -131,6 +131,27 @@ def test_codeless_reply_scores_zero_with_diagnostics():
     assert state["reward"] == 0.0
     assert state["metrics"]["parsed_code_present"] == 0.0
     assert state["metrics"]["child_completed"] == 0.0
+
+
+def test_redaction_reference_scores_one_and_echo_leaks_fail():
+    from verifiers_component_forge.families.redaction_contract import (
+        reference_module_source,
+    )
+
+    env = forge.load_environment()
+    row = next(
+        r for r in env.get_dataset() if r["info"]["family"] == "redaction-contract"
+    )
+
+    reply = "```python\n" + reference_module_source() + "\n```\n"
+    state = asyncio.run(_score(env, row, reply))
+    assert state["reward"] == 1.0, state["metrics"]
+    assert state["metrics"]["child_completed"] == 1.0
+    assert state["metrics"]["probe_error_fraction"] == 0.0
+
+    leaky = "```python\ndef redact_record(record):\n    return record\n```\n"
+    state2 = asyncio.run(_score(env, row, leaky))
+    assert state2["reward"] == 0.0
 
 
 def test_prompt_states_the_whole_contract():
