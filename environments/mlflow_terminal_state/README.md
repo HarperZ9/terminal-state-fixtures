@@ -38,10 +38,16 @@ every answer is re-derivable on any machine. Distribution: 162 not_launched,
 
 Both parse the last JSON object in the completion; unparseable output scores 0.
 
+## Release status
+
+The source is public in `HarperZ9/terminal-state-fixtures`. Version `0.1.1` is
+present in the author's Prime Intellect account as a private Hub environment.
+It is not yet a public Hub release.
+
 ## Provenance
 
 Distilled from a production receipt-scoring pipeline (de-identified: no
 provider names, no customer data). The reference scorer, the exhaustive
-enumeration, and the reward discrimination checks were validated before
-publish: dataset builds identically twice, correct answers score 1.0, wrong
-verdicts and garbage score 0.0.
+enumeration, and the reward discrimination checks were validated before the
+private Hub upload: dataset builds identically twice, correct answers score
+1.0, wrong verdicts and garbage score 0.0.

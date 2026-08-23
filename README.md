@@ -20,8 +20,9 @@ regression in the numbers means a regression in the behavior.
 
 Classify agent-run records into seven terminal verdicts and decide which runs
 belong in the quality denominator. 324 records, every reachable field
-combination, no sampling. Published on Prime Intellect's Environments Hub as
-`zaindanaharper/mlflow-terminal-state`.
+combination, no sampling. The public source is this repository. Version `0.1.1`
+is staged privately on Prime Intellect's Environments Hub as
+`zaindanaharper/mlflow-terminal-state`; it is not yet a public Hub release.
 
 Load it directly:
 
@@ -32,8 +33,9 @@ env = mlflow_terminal_state.load_environment()  # a verifiers SingleTurnEnv
 dataset = mlflow_terminal_state.build_dataset()  # 324 rows, deterministic
 ```
 
-Or install from the hub and evaluate with the [verifiers](https://github.com/willccbb/verifiers)
-toolchain; the hub page carries the install command for your setup.
+After a public Hub release, install it from the Hub and evaluate with the
+[verifiers](https://github.com/PrimeIntellect-ai/verifiers) toolchain. Until
+then, use the public source in this repository.
 
 Full task, dataset, and reward spec:
 [environments/mlflow_terminal_state/README.md](environments/mlflow_terminal_state/README.md).
@@ -86,4 +88,5 @@ dataset from the scorer so ground truth is re-derivable, then pin the scorer's
 subtle cases and the rewards' discrimination as tests. The environment here is
 small enough to read in one sitting and serves as the worked example.
 
-One environment is published today. More follow as they clear the same bar.
+One environment is public-source and staged privately on the Hub today. More
+follow as they clear the same publication bar.
