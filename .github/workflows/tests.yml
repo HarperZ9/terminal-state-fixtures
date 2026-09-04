@@ -20,3 +20,15 @@ jobs:
       - name: Test mlflow-terminal-state
         working-directory: environments/mlflow_terminal_state
         run: pytest tests/ -q
+
+  art:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+      - name: The card still matches the code it describes
+        run: python tools/check_repo_facts.py
+      - name: The artwork still matches its spec
+        run: python tools/check_repo_art.py

@@ -1,5 +1,7 @@
 # terminal-state fixtures
 
+<img src="docs/art/terminal-state-fixtures-header.svg" alt="terminal-state-fixtures, evaluation environments that score an agent by the state it left behind. Score the state, not the story.">
+
 Evaluation environments that score an AI agent by the terminal state of its
 work, not by what its transcript claims. Each environment ships an exhaustive
 dataset, a deterministic reference scorer, and rewards whose discrimination is
@@ -17,6 +19,8 @@ regression in the numbers means a regression in the behavior.
 ## Environments
 
 ### mlflow-terminal-state
+
+<img src="docs/art/record-to-verdict.svg" alt="Eight stages taking one run record to a verdict: run record, launched, timeout, provider, integrity, oracle, verdict, denominator. A record carries five fields: execution with four values, provider with three, oracle with three, receipt with three and artifact with three. Every combination is enumerated, so the dataset is 324 rows with no sampling. Scoring applies eight rules in a fixed order. A blocked or never launched execution is not a run at all and leaves the denominator. A timeout reached no terminal answer and leaves it. A structured provider refusal is not a task failure and leaves it. Output that never parsed into a claim leaves it. A receipt mismatch or an artifact mismatch refutes the run even when the oracle passed, because integrity outranks the oracle, and that verdict counts. An absent oracle is an honest null rather than a pass and leaves the denominator. An oracle pass verifies and an oracle fail refutes, and both count. Seven terminal verdicts exist and only two of them, verified and refuted, belong in the quality denominator, which is 23 of the 324 rows. Three outcomes: a verdict that counts, a verdict that counts against the run, and a record excluded from the denominator entirely.">
 
 Classify agent-run records into seven terminal verdicts and decide which runs
 belong in the quality denominator. 324 records, every reachable field
@@ -42,6 +46,8 @@ Full task, dataset, and reward spec:
 
 ### verifiers-component-forge
 
+<img src="docs/art/contract-to-reward.svg" alt="Eight stages taking a contract to a reward: family, contract, model writes, structural gate, child process, visible fixtures, hidden probes, terminal reward. Five families are shipped: parser contract, rubric contract, rubric repair, referee protocol and a synthetic redaction contract, carrying 337 cases in total. Each case shows the model a normative contract and, for the repair family, one mutated environment module alongside it. The model writes a component. A structural gate checks that the answer parsed into code and has the declared shape. The code is executed in a child process rather than in the harness, so a crash is a score and not an outage. Visible fixtures are the ones quoted in the prompt. Hidden probes are frozen ahead of time and never shown, and there are 5,058 frozen expectations across the five families, counting 1,720 parser probes, 1,288 rubric contract fixtures, 1,518 repair fixtures, 20 redaction fixtures and 512 referee scripts. The referee family replays its canned player scripts through the real multi-turn rollout loop and compares transcripts, rewards and stop reasons, with an independent pure fold of each state machine cross-checking every frozen expectation. Reward comes from the terminal output of the child process. Three outcomes: full credit when the hidden probes agree, the frozen no-op share when the broken module comes back unchanged, and zero when nothing runs.">
+
 Write and repair verifiers components against terminal-state contracts. The
 environment includes parser-contract, rubric-contract, rubric-repair,
 referee-protocol, and synthetic redaction contract families (337 cases,
@@ -61,6 +67,8 @@ Reproduce:
 [environments/verifiers-component-forge/REPRODUCE.md](environments/verifiers-component-forge/REPRODUCE.md).
 
 ## The claims are tests
+
+<img src="docs/art/fixture-table.svg" alt="A table of fourteen rows: what the fixtures declare, how many of it there are, and where each number is read from. Two environments are shipped. A run record has five fields, and enumerating every combination gives 324 rows with no sampling. Seven terminal verdicts exist, and only 23 of the 324 rows belong in the quality denominator. The component forge ships five families holding 337 cases and 5,058 frozen expectations, of which 512 are referee scripts replayed through the real rollout loop and 77 are repair cases. Seventy-six test functions pin the claims. Ten evaluation runs are recorded in the tree across 144 rollouts, all of them for the component forge. No scored run is recorded for the first environment, so nothing here is evidence about how a model performs on it.">
 
 The spec's validation claims are pinned in
 [environments/mlflow_terminal_state/tests](environments/mlflow_terminal_state/tests):
