@@ -1,4 +1,18 @@
-# terminal-state fixtures
+<picture>
+  <source media="(prefers-color-scheme: dark)" srcset="https://raw.githubusercontent.com/HarperZ9/terminal-state-fixtures/main/docs/art/hero-dark.svg">
+  <img src="https://raw.githubusercontent.com/HarperZ9/terminal-state-fixtures/main/docs/art/hero-light.svg" alt="terminal-state-fixtures: Score AI agents by the state they leave, not by their transcript. Bundles of fine lines carry the work through 4 stations, record, score, verdict and denominator, along a sweeping path into a bright core." width="100%">
+</picture>
+
+# terminal-state-fixtures
+
+Score AI agents by the state they leave, not by their transcript.
+
+```
+uv venv && uv pip install verifiers pytest
+```
+
+[![license](https://img.shields.io/badge/license-MIT-e6e1d6?style=flat-square&labelColor=1a1712)](https://github.com/HarperZ9/terminal-state-fixtures/blob/main/LICENSE)
+![python 3.11+](https://img.shields.io/badge/python-3.11%2B-e6e1d6?style=flat-square&labelColor=1a1712)
 
 <img src="docs/art/terminal-state-fixtures-header.svg" alt="terminal-state-fixtures, evaluation environments that score an agent by the state it left behind. Score the state, not the story.">
 
