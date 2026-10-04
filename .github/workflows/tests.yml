@@ -32,3 +32,9 @@ jobs:
         run: python tools/check_repo_facts.py
       - name: The artwork still matches its spec
         run: python tools/check_repo_art.py
+  art-receipts:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Verify art receipt digests
+        run: python3 scripts/check_art_receipts.py
