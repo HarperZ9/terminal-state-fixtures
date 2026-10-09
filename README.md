@@ -21,6 +21,12 @@ work, not by what its transcript claims. Each environment ships an exhaustive
 dataset, a deterministic reference scorer, and rewards whose discrimination is
 pinned by tests, so every score is re-derivable on any machine.
 
+## See it work, step by step
+
+The [animated explainer](https://harperz9.github.io/repo-explainers/terminal-state-fixtures.html)
+walks through the five-field run record enumerated into 324 rows, the eight-rule reference scorer, five records scored, the 23-row quality denominator, the two rewards, and the component-forge environment. Every value on it is output from this repository. Its
+source is [docs/explainer/index.html](docs/explainer/index.html).
+
 ## Why terminal state
 
 A transcript says what a model believes happened. The environment's terminal
