@@ -27,6 +27,45 @@ The [animated explainer](https://harperz9.github.io/repo-explainers/terminal-sta
 walks through the five-field run record enumerated into 324 rows, the eight-rule reference scorer, five records scored, the 23-row quality denominator, the two rewards, and the component-forge environment. Every value on it is output from this repository. Its
 source is [docs/explainer/index.html](docs/explainer/index.html).
 
+## Watch
+
+[![Models do what training pays for: a narrated film, 2 min](https://harperz9.github.io/media/explainers/incentives/poster.jpg)](https://harperz9.github.io/explainers.html#incentives-h)
+
+**[Models do what training pays for](https://harperz9.github.io/explainers.html#incentives-h)** (2 min, narrated, captioned). These environments pay a model for the state its work leaves and for the runs it excludes, so the reward measures what was meant. The film page carries the transcript, the sources and recall questions.
+
+Video walkthrough: coming with the next release.
+
+## Walkthrough
+
+Install it, run it once, then use the main feature. Each command below is real, and so is its output.
+
+1. **Get it.** Clone the first environment and install its tools with uv.
+
+   ```text
+   $ git clone https://github.com/HarperZ9/terminal-state-fixtures && cd terminal-state-fixtures/environments/mlflow_terminal_state
+   $ uv venv && uv pip install verifiers pytest
+   ```
+
+2. **Score a record.** The reference scorer reads a run record's five fields. An oracle pass with a broken receipt is refuted.
+
+   ```text
+   record: returned / ok / oracle pass / receipt mismatch / artifact match
+   verdict refuted, in_denominator true
+   ```
+
+3. **A run with no oracle.** A run with no independent check is unverifiable and stays out of the quality denominator.
+
+   ```text
+   record: returned / ok / oracle absent / receipt verified / artifact match
+   verdict unverifiable, in_denominator false
+   ```
+
+4. **Run the pinned claims.** The tests pin exhaustiveness, the rewards and the integrity rule. They were not run for this page.
+
+   ```text
+   $ uv run pytest tests/ -q
+   ```
+
 ## Why terminal state
 
 A transcript says what a model believes happened. The environment's terminal
