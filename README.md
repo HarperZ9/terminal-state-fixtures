@@ -33,8 +33,6 @@ source is [docs/explainer/index.html](docs/explainer/index.html).
 
 **[Models do what training pays for](https://harperz9.github.io/explainers.html#incentives-h)** (2 min, narrated, captioned). These environments pay a model for the state its work leaves and for the runs it excludes, so the reward measures what was meant. The film page carries the transcript, the sources and recall questions.
 
-Video walkthrough: coming with the next release.
-
 ## Walkthrough
 
 Install it, run it once, then use the main feature. Each command below is real, and so is its output.
