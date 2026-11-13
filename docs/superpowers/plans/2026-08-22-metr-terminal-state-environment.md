@@ -2,8 +2,6 @@
 
 > Status, 2026-11-13: this work shipped to `main` through a pull request on HarperZ9/terminal-state-fixtures. The lines below that say the branch stays local describe the state on 2026-08-22 and are kept as the record of that hold. No package has been published and nothing has been submitted to METR.
 
-> **For agentic workers:** REQUIRED SUB-SKILL: Use superpowers:subagent-driven-development (recommended) or superpowers:executing-plans to implement this plan task-by-task. Steps use checkbox (`- [ ]`) syntax for tracking.
-
 **Goal:** Add an owned, deterministic 324-case METR Task Standard environment without publishing or contacting any external party.
 
 **Architecture:** A single standard-library module implements METR's `TaskFamily` surface and exact terminal-state scorer. An independent pytest suite pins the exhaustive dataset and scorer semantics, while packaging and CI keep METR's pytest plugin in the test path only.
