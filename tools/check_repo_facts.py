@@ -24,6 +24,7 @@ SPEC = ROOT / "docs" / "art" / "terminal-state-fixtures.art.json"
 
 MLFLOW = "environments/mlflow_terminal_state"
 FORGE = "environments/verifiers-component-forge"
+METR = "environments/metr_terminal_state_runs"
 SCORER = f"{MLFLOW}/mlflow_terminal_state.py"
 SCORING = f"{FORGE}/verifiers_component_forge/scoring.py"
 DATA = f"{FORGE}/verifiers_component_forge/data"
@@ -237,12 +238,41 @@ def check_the_marked_row_is_still_an_honest_null() -> None:
     assert _eval_runs(FORGE), "the recorded runs the card counts have gone missing"
 
 
+def check_the_task_family_agrees_with_the_scorer() -> None:
+    """Two environments classify the same records, so they must not drift apart.
+
+    The METR task family carries its own copy of the eight rules. It is
+    standard library only, so it is executed whole and compared with the
+    reference scorer on every record of the full product, both ways round.
+    """
+    namespace = _scorer()
+    family: dict = {}
+    exec(compile(_read(f"{METR}/{Path(METR).name}.py"), METR, "exec"), family)
+    task_family = family["TaskFamily"]
+    assert {k: tuple(v) for k, v in namespace["FIELDS"].items()} == task_family.values, (
+        "the two environments no longer enumerate the same fields and values"
+    )
+    tasks = task_family.get_tasks()
+    rows = _records(namespace)
+    assert len(tasks) == len(rows), f"{len(tasks)} tasks against {len(rows)} dataset rows"
+    seen = set()
+    for verdict, counts, values in rows:
+        theirs = task_family.classify(values)
+        assert theirs == (verdict.value, counts), (
+            f"{values}: the scorer says {(verdict.value, counts)}, the task family says {theirs}"
+        )
+        seen.add(tuple(values[field] for field in task_family.fields))
+    stored = {tuple(task[field] for field in task_family.fields) for task in tasks.values()}
+    assert stored == seen, "the task family and the dataset hold different records"
+
+
 CHECKS = [
     check_card_rows_match_the_source,
     check_exclusions_are_settled_before_the_oracle,
     check_the_families_are_declared_twice,
     check_every_frozen_case_carries_its_expectations,
     check_the_marked_row_is_still_an_honest_null,
+    check_the_task_family_agrees_with_the_scorer,
 ]
 
 
