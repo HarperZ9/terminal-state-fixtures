@@ -101,6 +101,17 @@ then, use the public source in this repository.
 Full task, dataset, and reward spec:
 [environments/mlflow_terminal_state/README.md](environments/mlflow_terminal_state/README.md).
 
+### metr-terminal-state-runs
+
+Expose the same exhaustive 324 terminal states through METR Task Standard's
+`TaskFamily` interface. The runtime is standard-library only; a pinned official
+METR Git dependency verifies the pytest-plugin boundary during development.
+The fixture has no network, model, auxiliary VM, judge, or mutable-state
+dependency and is not represented as accepted or endorsed by METR.
+
+Reproduce and inspect the exact classifier contract:
+[environments/metr_terminal_state_runs/README.md](environments/metr_terminal_state_runs/README.md).
+
 ### verifiers-component-forge
 
 <img src="docs/art/contract-to-reward.svg" alt="Eight stages taking a contract to a reward: family, contract, model writes, structural gate, child process, visible fixtures, hidden probes, terminal reward. Five families are shipped: parser contract, rubric contract, rubric repair, referee protocol and a synthetic redaction contract, carrying 337 cases in total. Each case shows the model a normative contract and, for the repair family, one mutated environment module alongside it. The model writes a component. A structural gate checks that the answer parsed into code and has the declared shape. The code is executed in a child process rather than in the harness, so a crash is a score and not an outage. Visible fixtures are the ones quoted in the prompt. Hidden probes are frozen ahead of time and never shown, and there are 5,058 frozen expectations across the five families, counting 1,720 parser probes, 1,288 rubric contract fixtures, 1,518 repair fixtures, 20 redaction fixtures and 512 referee scripts. The referee family replays its canned player scripts through the real multi-turn rollout loop and compares transcripts, rewards and stop reasons, with an independent pure fold of each state machine cross-checking every frozen expectation. Reward comes from the terminal output of the child process. Three outcomes: full credit when the hidden probes agree, the frozen no-op share when the broken module comes back unchanged, and zero when nothing runs.">
@@ -125,7 +136,7 @@ Reproduce:
 
 ## The claims are tests
 
-<img src="docs/art/fixture-table.svg" alt="A table of fourteen rows: what the fixtures declare, how many of it there are, and where each number is read from. Two environments are shipped. A run record has five fields, and enumerating every combination gives 324 rows with no sampling. Seven terminal verdicts exist, and only 23 of the 324 rows belong in the quality denominator. The component forge ships five families holding 337 cases and 5,058 frozen expectations, of which 512 are referee scripts replayed through the real rollout loop and 77 are repair cases. Seventy-six test functions pin the claims. Ten evaluation runs are recorded in the tree across 144 rollouts, all of them for the component forge. No scored run is recorded for the first environment, so nothing here is evidence about how a model performs on it.">
+<img src="docs/art/fixture-table.svg" alt="A table of fourteen rows: what the fixtures declare, how many of it there are, and where each number is read from. Three environments are shipped. A run record has five fields, and enumerating every combination gives 324 rows with no sampling. Seven terminal verdicts exist, and only 23 of the 324 rows belong in the quality denominator. The component forge ships five families holding 337 cases and 5,058 frozen expectations, of which 512 are referee scripts replayed through the real rollout loop and 77 are repair cases. Eighty-four test functions pin the claims. Ten evaluation runs are recorded in the tree across 144 rollouts, all of them for the component forge. No scored run is recorded for the first environment, so nothing here is evidence about how a model performs on it.">
 
 The spec's validation claims are pinned in
 [environments/mlflow_terminal_state/tests](environments/mlflow_terminal_state/tests):
