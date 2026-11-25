@@ -1,3 +1,5 @@
+> **Archived (2026-11-25):** This repository has moved to [https://github.com/HarperZ9/flywheel/tree/main/packages/terminal-state-fixtures](https://github.com/HarperZ9/flywheel/tree/main/packages/terminal-state-fixtures). Active development and tests run there.
+
 <picture>
   <source media="(prefers-color-scheme: dark)" srcset="https://raw.githubusercontent.com/HarperZ9/terminal-state-fixtures/main/docs/art/hero-dark.svg">
   <img src="https://raw.githubusercontent.com/HarperZ9/terminal-state-fixtures/main/docs/art/hero-light.svg" alt="terminal-state-fixtures: Score AI agents by the state they leave, not by their transcript. Bundles of fine lines carry the work through 4 stations, record, score, verdict and denominator, along a sweeping path into a bright core." width="100%">
